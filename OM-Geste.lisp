@@ -1,4 +1,4 @@
-;AtomicOrchestrator, 2010 McGill University
+;OM-Geste, 2010-2012 IDMIL/McGill University
 ;
 ;This program is free software; you can redistribute it and/or
 ;modify it under the terms of the GNU General Public License
@@ -56,5 +56,5 @@
 
 
 (print "
-OM-gstr 0.1alpha
+OM-Geste 0.1alpha
 ")

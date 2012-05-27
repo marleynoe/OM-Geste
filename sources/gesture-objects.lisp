@@ -54,7 +54,7 @@
                                            collect (make-segmented-object (valuelists substr) (timelist str) t1 t2)
                                            ))
                                ))))
-    (print segment-data)
+    ;(print segment-data)
     (cons-array timearray 
                 (list nil (butlast times))
                 (loop for row in (mat-trans segment-data)
