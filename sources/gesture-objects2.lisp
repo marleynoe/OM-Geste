@@ -8,7 +8,7 @@
    ;(fields :accessor fields :initarg :fields :initform nil)
    ;(rows :accessor rows :initarg :rows :initform nil)
    (timerange :accessor timerange :initarg :timerange :initform nil))
-  (:icon 02))
+  (:icon 654))
 
 ;a gesture-stream represents a stream from the gesture array (SDIF) (a GDIF descriptor)
 (defclass! gesture-stream ()
@@ -36,22 +36,23 @@
                          ))
        (setf (streams self) (loop for str in stream-info collect
  
-                                  (multiple-value-bind (data times) 
-                                      ;             SDIFFILE       StreamID Frametype  Matrixtype  field row1 row2   time1                    time2
+                                   (multiple-value-bind (data times) 
+                                      ;             SDIFFILE       StreamID frametype  Matrixtype  field row1 row2   time1                    time2
                                       (getsdifdata (datasrc self) (car str) (cadr str) (caddr str) nil   nil  nil    (first (timerange self)) (second (timerange self)))
-
+                                    
+                                    ;(print (car str))
+                                    ;(print (streams self))
                                     ;this is a gesture stream ------------------
-                                    ;(print (length (mat-trans data)))
                                     (make-instance 'gesture-stream
-                                                                    ;StreamID Frametype  Matrixtype
                                                    :sdif-info (list (car str) (cadr str) (caddr str))
                                                    :timelist times
                                                    :substreams (loop for sbstr in (mapcar #'mat-trans (mat-trans data)) collect
                                                                       (make-instance 'gesture-substream 
                                                                                     :valuelists sbstr)))
                                     ;this is a gesture stream ------------------
-                                    ))
-             )
+                                    )
+                                   (print data)
+)))
        ))
    self)
 
@@ -73,14 +74,13 @@
 |#
 
 
-#|
+
 (defmethod initialize-instance :after ((self gesture-model) &rest initargs) 
-   (declare (ignore initargs)) 
-   (when (and (gesture-data self) (times self))
-     (make-instance 'gesture-model :self (segment-gstr (gesture-data self) (times self)))
-     )
-   self)
-|#
+   ;(declare (ignore initargs)) 
+   ;(when (and (gesture-data self) (times self))
+     ;(make-instance 'gesture-model :self (segment-gstr (gesture-data self) (times self)))
+     ))
+
 
  
 (defmethod segment-gstr ((self gesture-array) times)

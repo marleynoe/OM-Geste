@@ -1,4 +1,4 @@
-;OM-Geste, 2010-2012 IDMIL/McGill University
+;OM-Geste, 2010-2014 IDMIL/McGill University
 ;
 ;This program is free software; you can redistribute it and/or
 ;modify it under the terms of the GNU General Public License
@@ -27,7 +27,8 @@
 (mapcar #'(lambda (file) (compile&load (om-relative-path '("sources") file )))
         '(
           "gesture-objects"
-          "gesture-editor"))
+          "gesture-editor"
+          "gesture-tools"))
 
 #|
 (om::fill-library '(
@@ -56,5 +57,5 @@
 
 
 (print "
-OM-Geste 0.1alpha
+OM-Geste 0.1.0
 ")

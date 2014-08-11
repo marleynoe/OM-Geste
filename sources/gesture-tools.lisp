@@ -68,6 +68,7 @@
             :icon '(264)
             (let* (;(thearray (clone self))
                    (arraydata (data self))
+                   (timesdata (times self))
                    (labeldata
                     (loop for slot in arraydata
                           for i from 0 to (1- (length arraydata))
@@ -75,8 +76,29 @@
                           (list (index2label self i) slot)
                           ))
                    (finaldata (x-append (flat labeldata 1) slotname (list slotvals))))
+              (print timesdata)
               (set-array (type-of self) (times self) finaldata)
               ))
+
+(defmethod! get-field ((array class-array) (column number) (row number))
+            :icon '(323)
+            (comp-field (get-comp array column) row)
+            )
+
+(defmethod! get-field ((array class-array) (column list) (row list))
+            (mapcar (lambda (thecolumn therow)
+                      (get-field array thecolumn therow)) column row)
+            )
+
+(defmethod! get-column ((array class-array) (column number))
+            :icon '(323)
+            (comp-list (get-comp array column))
+            )
+
+(defmethod! get-row ((array class-array) (row number))
+            :icon '(323)
+            (nth row (data array))
+            )
 
 #|
 (defmethod! set-array-slot ((self class-array) (slotname t) (slotvals t))
@@ -134,6 +156,15 @@
             thearray
             ))
 
+(defmethod! process-model ((process t) (array class-array))
+            :icon '(264)
+            (let ((thearray (clone array)))
+                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+            thearray
+            ))
+
+
+
 (defmethod! process-columns ((process t) (array class-array))
             :icon '(264)
             (let* ((thearray (clone array))
@@ -160,6 +191,16 @@
             thearray
             ))
 
+
+(defmethod! user-process-model ((process t) (slotname string) (array class-array))
+            :icon '(264)
+            (let* ((thearray (clone array))
+                  ;(theslotvalues (symbol-function slotname)) ;later I should use symbol-function... but no time for now
+                  (theslotvalues (array-field array slotname))
+                  (thenewvalues (funcall process theslotvalues)))
+            (array-field thearray slotname thenewvalues)
+            thearray
+            ))
 
 
 ;%%%%%%%%%%%%%% USER FUNS %%%%%%%%%%%%%%%%%%%%%%
@@ -207,7 +248,7 @@
             )
 
 (defmethod! comp-quantize ((self component) (interval list))
-            :icon 04
+            :icon 02
             (comp-list self (quantize (comp-list self) interval))
             )
 
@@ -281,7 +322,7 @@
                    (curve (mat-trans (list xvals yvals))))
               (array-field self slotname (third (multiple-value-list (om-sample (second (mat-trans (reduce-n-points curve points precision))) numcomps))))
               ))
-
+#|
 (defmethod! reduce-n-points ((self 3D-trajectory) n &optional (precision 10))
      (let ((reduced-points (print (reduce-n-points (point-pairs self) n precision))))
        (traject-from-list (mapcar 'car reduced-points)
@@ -293,7 +334,7 @@
                           (sample-params self)
                           (interpol-mode self)))
      )
-     
+     |#
 
 (defmethod! field-lowpass ((self class-array) (slotname string) (filtertype string) (windowsize number) (recursion-depth number))
             :icon 04
@@ -339,6 +380,31 @@
                                                      (times item) '3D-trajectory (decimals item) (sample-params item) (interpol-mode item)
                                        ))))
                     )))
+
+
+(defmethod! noncausal-filter ((self class-array) (slotname string) (points integer) &key slotname-x (precision 10))
+            :icon 02
+            :initvals '(nil nil nil nil 10)
+            (let* ((numcomps (length (car (data self))))
+                   (thebpfs (array-field self slotname))
+                   )
+              (array-field self slotname (loop for bpf in thebpfs collect
+                                               (reduce-n-points bpf points precision))) 
+              ))
+
+
+;Need a Smoothing+Downsample!
+
+(defmethod! stream-resample ((self class-array) (slotname string) (downsampling number))
+            :icon 04
+           ; :initvals '(nilnil "lowpass" 3 1)
+           ; :menuins '((2 (("lowpass" "lowpass") ("median" "median") ("mean" "mean"))))
+            (let ((thedata (array-field self slotname)))
+              ;(loop for item in thedata do
+             (array-field self slotname (om-sample thedata downsampling))
+                    ;)
+              )
+            )
 
 
 
@@ -650,7 +716,7 @@
             (values (first self) (second self))
             )
 
-(defmethod! quantize ((self number) interval)
+(defmethod! quantize ((self number) interval)item
             (if (and self interval)
                 (om* (om-round (om/ self interval)) interval)
               self
