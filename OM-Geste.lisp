@@ -1,4 +1,4 @@
-;OM-Geste, 2010-2014 IDMIL/McGill University
+;OM-Geste, 2010-2015 IDMIL/McGill University
 ;
 ;This program is free software; you can redistribute it and/or
 ;modify it under the terms of the GNU General Public License
@@ -30,17 +30,28 @@
           "gesture-editor"
           "gesture-tools"))
 
-#|
-(om::fill-library '(
-                    ("Utilities" (
-                                  (nil nil nil (get-bpf-points atoms->chords plot-sdif) nil)))
-                    
-                    ))
-|#  
-       
-;(sub-pack-name subpack-lists class-list function-list class-alias-list)
+(defparameter *om-geste-lib-path* (make-pathname :directory (pathname-directory *load-pathname*)))
 
-                  
+
+#|
+(defparameter *geste-classes* '(
+                        ;"gesture-model"
+                        "gesture-array"
+                        ))
+
+(defun load-geste-classes (subdir &optional pack)
+  (loop for item in *geste-classes* do  
+        (let ((itempath (om-relative-path subdir item)))
+          (compile&load itempath)
+          (let ((classname (intern (string-upcase item))))
+            (when (and pack (find-class classname nil))              
+              (addclass2pack classname pack))))
+        )
+  )
+
+(load-geste-classes  '("sources" "classes") (find-library "OM-geste"))
+|#
+                      
 (defun recursive-load-classes (dir &optional pack)
   (loop for item in (om-directory dir) do
         (if (directoryp item) 
@@ -55,6 +66,14 @@
    
 (recursive-load-classes (om-relative-path '("sources" "classes") nil) *current-lib*)
 
+; here add the menu entries
+
+;(sub-pack-name subpack-lists class-list function-list class-alias-list)
+(om::fill-library '(
+                    ("Filters" nil nil (field-lowpass slot-lowpass slot-highpass) nil)
+                    ()
+                    )
+)
 
 (print "
 OM-Geste 0.1.0

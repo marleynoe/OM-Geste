@@ -4,13 +4,11 @@
 # *(Autosaved).* 
 
 
-
-
 # LispWorks files
 
-.xfasl
-.fasl
-.nfasl
-.ofasl
-.ufasl
-.lisp~
+*.xfasl
+*.fasl
+*.nfasl
+*.ofasl
+*.ufasl
+*.*~
