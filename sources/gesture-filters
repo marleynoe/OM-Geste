@@ -1,0 +1,40 @@
+(in-package :om)
+
+#|
+(defmethod! slide-filter ((self list) (slide number))
+            (setf lastsample 0)
+            (loop for sample in self collect
+                  (setf lastsample (+ lastsample (/ (- sample lastsample) slide)))
+                        )
+                  )
+|#
+
+(defmethod! slide-filter ((self list) (slide number))
+            (let ((lastsample 0))
+            (loop for sample in self collect
+                  (setf lastsample (+ lastsample (/ (- sample lastsample) slide)))
+                        )
+                  ))
+
+; write recursively?
+                
+#|
+(defmethod! slide-filter-rec ((self list) (slide number))
+            (loop for sample in self collect
+                  (+ (slide-filter-rec (- sample (/ lastsample slide) ))
+                        )
+                  ))
+|#
+    
+(defmethod! ema ((self list) (alpha number))
+            (setf lastsample 0)
+            (loop for sample in self collect
+                  (setf lastsample (+ (* alpha sample) (* (- 1 alpha) lastsample)))
+                        )
+                  )
+                      
+
+(defmethod! emd ((self list) (alpha number))
+            (ema (om-abs (om- self (ema self alpha))) alpha)
+            )
+                      

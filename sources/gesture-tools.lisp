@@ -140,6 +140,9 @@
 )
 
 
+
+
+
 (defmethod! process-array ((process t) (array class-array))
             :icon '(264)
             (let* ((thearray (clone array))
@@ -148,6 +151,17 @@
                     (funcall process (list thearray complist))
             thearray
             ))
+
+#|
+(defmethod! process-array ((process t) (array class-array))
+            :icon '(264)
+            (let ((thearray (clone array))
+                  )
+              (loop for index from 0 to (1- (numcols thearray)) do
+                    (apply process (list thearray index)))
+            thearray
+            ))
+|#
 
 (defmethod! process-rows ((process t) (array class-array))
             :icon '(264)

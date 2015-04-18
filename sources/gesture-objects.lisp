@@ -64,6 +64,8 @@
            (:icon 02)
            )
 
+
+;Yes, this is absolutely required!
 #|
 (defmethod* objFromObjs ((self gesture-array) (type gesture-model))
             (print (times type))
@@ -110,6 +112,9 @@
 
 ;datalists is a row of the matrix (instance) of lists (parameters)
 
+; here we choose to create objects solely based on the dimensionality of the data. Probably not the best way. Should be based on the type inside the SDIF!
+; First check for SDIF type, THEN check for dimensionality
+; 
 ; here I should add methods for chord-seq and audio etc.
 (defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
   (let* ((pos1 (position t1 timelist :test '<))
@@ -134,6 +139,8 @@
            (traject-from-list (first data) (second data) (third data) times '3D-trajectory decimals))
            )
     ))
+
+
 
 #|
 (defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
