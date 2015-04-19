@@ -24,17 +24,57 @@
 
 ;;make methods for lists of processes!
 
-(defmethod! mapping ((self gesture-model) matching-fun)
+(defmethod! mapping ((self gesture-model) matching-fun theclass)
             :icon '(333)
             (compile-patch matching-fun)
             (loop for col from 0 to (1- (numcols self)) collect
-                  (let* ((box (make-instance 'temporalbox))
+                  (let* ((box (make-instance (type-of theclass)))
                          (vals 
                           (multiple-value-list 
                            (funcall (intern (string (code matching-fun)) :om)
                                     (loop for slot in (get-all-initargs-of-class (type-of self)) collect
                                           (list (name slot)
-                                                (get-array-val self (name slot) col))))))
+                                                (get-array-val self (name slot) col))))))`
+                         (names (mapcar #'(lambda (out) 
+                                            (intern (frame-name out) :om))
+                                        (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
+                         (slots (mat-trans (list names vals))))
+                    
+                    (setf (free-store box) vals) ; what is this doing?
+                    
+                    (loop for item in slots do
+                          (if (is-om-slot? (type-of box) (car item))
+                              
+                              (set-slot box  (car item) (if (floatp (cadr item))
+                                                            (om-round (cadr item))
+                                                          (cadr item)))
+                            (om-beep-msg (format nil "Error: slot ~A does not exist in class TemporalBox !" (car item))))
+                          )
+                    box
+                    )))
+
+
+
+(defmethod! mapping2 ((self gesture-model) matching-fun)
+            :icon '(333)
+            ;(print "it's me")
+            (compile-patch matching-fun)
+            (loop for col from 0 to (1- (numcols self)) collect
+                  (let* ((box (make-instance 'temporalbox))
+                         (thecontrols (lcontrols self))
+                         (vals 
+                          (multiple-value-list 
+                           (funcall (intern (string (code matching-fun)) :om) ;matching fun = patch in lambda mode
+
+                                   ; (loop for slot in (get-all-initargs-of-class (type-of self)) collect
+                                   ;       (print (list (name slot)
+                                   ;             (get-array-val self (name slot) col)))))))
+                                   ; a list of ( (("name1" val@col1) ("name2" val@col1)) (("name1" val@col2) ("name2" val@col2)))                                   
+                                   ; (lcontrols self))))
+
+                                    (loop for slot in thecontrols collect
+                                          (list (string (first slot)) (nth col (second slot)))))))
+                                                 ;slot))))
                          (names (mapcar #'(lambda (out) 
                                             (intern (frame-name out) :om))
                                         (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
@@ -52,6 +92,23 @@
                           )
                     box
                     )))
+
+
+(defmethod! clearmaq ((self ommaquette))
+            :icon 327
+            :initvals '(nil)
+            :indoc '("a maquette")
+            :doc "Removes all TemporalBoxes in <self>."
+           (removealltemporalboxes self)
+           )
+
+(defmethod! gesture-slot (descriptor name)
+            :icon '(335) ;'(333)
+            
+            :menuins '((1 (("onset" "onset") ("duration" "duration") ("magnitude" "magnitude") 
+                           ("norm" "norm") ("corpus-index" "corpus-index") ("file-index" "file-index") ("filepath" "filepath"))))
+            ;(cadr (find name descriptor :test 'string-equal :key 'car)))
+            (cadr (find name descriptor :test 'string-equal :key 'car)))
 
 #|
 (defmethod! mapping ((self gesture-model) matching-fun theclass)

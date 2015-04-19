@@ -1,6 +1,45 @@
 (in-package :om)
 ;---------------
 
+
+;dot.jab is interesting! 
+;dot.region can also be interesting!
+
+#|
+(defmethod! differentiate ((self list) (order number))
+            (let* ((thelist (x-append (car self) self))
+                   (1stdiff (x->dx thelist)))
+              (loop for i from 1 to order do
+                    (setf thelist (x->dx thelist))
+                    )
+              thelist))
+|#
+
+(defmethod! differentiate ((self list) (order number))
+            (let ((thelist self))
+              (loop for i from 1 to order do
+                    (let ((diff (x->dx thelist)))
+                      (setf thelist (x-append (car diff) diff))
+                      ))
+              thelist))
+              
+
+(defmethod! integrate ((self list) (order number))
+            (let ((thelist self))
+              (loop for i from 1 to order do
+                    (let ((diff (dx->x (car thelist) thelist)))
+                      (setf thelist diff)
+                      ))
+              thelist))
+
+(defmethod! integrate ((self list) (order number))
+            (let ((thelist (cdr self)))
+              (loop for i from 1 to order do
+                    ;(let ((diff (dx->x (car thelist) thelist)))
+                      (setf thelist (dx->x 0 thelist))
+                      )
+              thelist))
+
 (defmethod! om-sum ((self list))
                   (loop for item in self
                   sum item)
