@@ -56,7 +56,7 @@
 |#
 
 ; To do: 1) needs to work with other classes (not only temporalboxes), 2) need a map-column, map-row? function (where the lambda patch can see the entire picture)
-; if I want to have dynamic mappins I need to be able to see the entire model.
+; if I want to have dynamic mappins I need to be able to see the entire model or at least slot. 
  
 (defmethod! mapping ((self gesture-model) matching-fun)
             :icon '(333)
