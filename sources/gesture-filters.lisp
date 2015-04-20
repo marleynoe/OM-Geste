@@ -77,12 +77,7 @@
                                               (om-mean (first-n (setf windowedlist (cdr windowedlist)) windowsize))))
                           ))
                 ; else it's a list of something else
-                (setf thelist ;(mapcar 'sma thelist windowsize recursion)))
-                      (mapcar (lambda (x) 
-                                (sma x windowsize recursion)) thelist)))
-              ;(mapcar #'(lambda (theobject) (traj-scale theobject :ymin ymin :ymax ymax :xmin xmin :xmax xmax))
-              ;      (bpf-list self))
-     
+                (setf thelist (mapcar (lambda (x) (sma x windowsize recursion)) thelist)))
                       thelist))
 
 (defmethod! sma ((self bpf) (windowsize number) &optional (recursion 1))
@@ -99,7 +94,6 @@
               ))
 
 ; for lists of objs (incl lists)
-(defmethod! sma 
 
 ; simple-moving-median
 (defmethod! smm ((self list) (windowsize number) &optional (recursion 1))
