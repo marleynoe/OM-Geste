@@ -1,9 +1,10 @@
 (in-package :om)
 
 ; some filtering functions
-; I should make these filters recursive!
+; I should make these filters recursive! And the default windowsize should be over the entire list? the statistics should do the recursion and windowsize, too
 
-; Max's "slide filter"
+
+; Max's "slide filter" (IIR)
 
 (defmethod! slide-filter ((self list) (slide number) &optional (recursion 1))
             :icon 631  
@@ -20,29 +21,29 @@
                           ))
                     thelist))
 
-(defmethod! slide-filter ((self bpf) (windowsize number) &optional (recursion 1))
+(defmethod! slide-filter ((self bpf) (slide number) &optional (recursion 1))
             (let ((xpoints (x-points self))
-                  (ypoints (slide-filter (y-points self) windowsize recursion)))
+                  (ypoints (slide-filter (y-points self) slide recursion)))
               (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
               ))
 
 ;probably not the proper way of doing this (with dimensionality >1)
-(defmethod! slide-filter ((self bpc) (windowsize number) &optional (recursion 1))
-            (let ((xpoints (slide-filter (x-points self) windowsize recursion))
-                  (ypoints (slide-filter (y-points self) windowsize recursion)))
+(defmethod! slide-filter ((self bpc) (slide number) &optional (recursion 1))
+            (let ((xpoints (slide-filter (x-points self) slide recursion))
+                  (ypoints (slide-filter (y-points self) slide recursion)))
               (simple-bpf-from-list xpoints ypoints 'bpc (decimals self))
               ))
 
-(defmethod! slide-filter ((self 3DC) (windowsize number) &optional (recursion 1))
-            (let ((xpoints (slide-filter (x-points self) windowsize recursion))
-                  (ypoints (slide-filter (y-points self) windowsize recursion))
-                  (zpoints (slide-filter (z-points self) windowsize recursion)))
+(defmethod! slide-filter ((self 3DC) (slide number) &optional (recursion 1))
+            (let ((xpoints (slide-filter (x-points self) slide recursion))
+                  (ypoints (slide-filter (y-points self) slide recursion))
+                  (zpoints (slide-filter (z-points self) slide recursion)))
               (3DC-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
 
 
 
-; simple-moving-average 
+; simple-moving-average (FIR)
 (defmethod! sma ((self list) (windowsize number) &optional (recursion 1))
             :icon 631  
             :initvals '(nil 5 1)
@@ -50,16 +51,43 @@
             :numouts 1
             :doc "Implements the simple-moving-average: the arithmetic mean of a list of numbers in a sliding window"
             (let ((thelist self))
-              (loop for i from 1 to recursion do
-                    (let ((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist)))
-                      (setf thelist (loop for window in thelist collect
-                                          (om-mean (first-n (setf windowedlist (cdr windowedlist)) windowsize))))
-                      ))
-              thelist))
+             
+                  (loop for i from 1 to recursion do
+                        (let ((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist)))
+                          (setf thelist (loop for window in thelist collect
+                                              (om-mean (first-n (setf windowedlist (cdr windowedlist)) windowsize))))
+                          ))
+
+                  thelist))
+
+; this should be done for all the filter function 
+(defmethod! sma ((self list) (windowsize number) &optional (recursion 1))
+            :icon 631  
+            :initvals '(nil 5 1)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
+            :numouts 1
+            :doc "Implements the simple-moving-average: the arithmetic mean of a list of numbers in a sliding window"
+            (let ((thelist self))
+
+              (if (numberp (car thelist)) ; means it's a list of numbers
+               
+                  (loop for i from 1 to recursion do
+                        (let ((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist)))
+                          (setf thelist (loop for window in thelist collect
+                                              (om-mean (first-n (setf windowedlist (cdr windowedlist)) windowsize))))
+                          ))
+                ; else it's a list of something else
+                (setf thelist ;(mapcar 'sma thelist windowsize recursion)))
+                      (mapcar (lambda (x) 
+                                (sma x windowsize recursion)) thelist)))
+              ;(mapcar #'(lambda (theobject) (traj-scale theobject :ymin ymin :ymax ymax :xmin xmin :xmax xmax))
+              ;      (bpf-list self))
+     
+                      thelist))
 
 (defmethod! sma ((self bpf) (windowsize number) &optional (recursion 1))
-            (let ((xpoints (x-points self) recursion)
-                  (ypoints (sma (y-points self) windowsize) recursion))
+            (let ((xpoints (x-points self))
+                  (ypoints (sma (y-points self) windowsize recursion)))
               (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
               ))
 
@@ -69,6 +97,9 @@
                   (zpoints (sma (z-points self) windowsize recursion)))
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
+
+; for lists of objs (incl lists)
+(defmethod! sma 
 
 ; simple-moving-median
 (defmethod! smm ((self list) (windowsize number) &optional (recursion 1))

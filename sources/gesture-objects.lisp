@@ -112,10 +112,11 @@
 
 ;datalists is a row of the matrix (instance) of lists (parameters)
 
-; here we choose to create objects solely based on the dimensionality of the data. Probably not the best way. Should be based on the type inside the SDIF!
-; First check for SDIF type, THEN check for dimensionality
+; here we choose to create objects solely based on the dimensionality of the data. This assumption is probably not always a good choice. 
+; Instead, could be based on the matrix type inside the SDIF (implicit)? Or in an NVT an entry for "separable" or "integral"?
+; Or a combination: First check for SDIF type, THEN check for dimensionality. Meaning: in the SDIF multiple fields (columns) are integral, rows are separable
 ; 
-; here I should add methods for chord-seq and audio etc.
+; here I should add methods for chord-seq (using the 'select' function), audio (using 'sound-cut') etc.
 (defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
   (let* ((pos1 (position t1 timelist :test '<))
         (pos2 (position t2 timelist :from-end t :test '>))

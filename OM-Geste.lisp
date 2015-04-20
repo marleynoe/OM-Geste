@@ -28,7 +28,11 @@
         '(
           "gesture-objects"
           "gesture-editor"
-          "gesture-tools"))
+          "gesture-tools"
+          "gesture-filters"
+          "gesture-statistics"
+          "mapping"
+          ))
 
 (defparameter *om-geste-lib-path* (make-pathname :directory (pathname-directory *load-pathname*)))
 

@@ -41,7 +41,7 @@
                                         (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
                          (slots (mat-trans (list names vals))))
                     
-                    (setf (free-store box) vals) ; what is this doing?
+                    (setf (free-store box) vals)
                     
                     (loop for item in slots do
                           (if (is-om-slot? (type-of box) (car item))
@@ -58,6 +58,9 @@
 ; To do: 1) needs to work with other classes (not only temporalboxes), 2) need a map-column, map-row? function (where the lambda patch can see the entire picture)
 ; if I want to have dynamic mappins I need to be able to see the entire model or at least slot. 
  
+; I should manipulate the function so that it accounts both for initargs and lcontrols
+
+#|
 (defmethod! mapping ((self gesture-model) matching-fun)
             :icon '(333)
             ;(print "it's me")
@@ -95,11 +98,11 @@
                           )
                     box
                     )))
-
+|#
 
 ; think about arrays: maybe in that case I should rather set components than making different instances.
 ; also, the slots of the instances actually DO get set, but it's not visible in the editor. -> Jean??
-(defmethod! mapping2 ((self gesture-model) matching-fun theclass)
+(defmethod! mapping ((self gesture-model) matching-fun theclass)
             :icon '(333)
             ;(print "it's me")
             (compile-patch matching-fun)
@@ -127,15 +130,17 @@
                     ;(setf (free-store box) vals)
                     
                     (loop for item in slots do
-                          (if (is-om-slot? (type-of box) (car item))
+                          ;(let ((theslotname (car item)))
+                            (if (is-om-slot? (type-of box) (car item))
                               
-                              (set-slot box  (car item) (if (floatp (cadr item))
-                                                            (om-round (cadr item))
-                                                          (cadr item)))
-                            (om-beep-msg (format nil "Error: slot ~A does not exist in class TemporalBox !" (car item))))
-                          )
+                              (set-slot box (car item) (cadr item))
+
+                              ;(setf (theslotname box) (cadr item)) --> this doesn't work
+                            (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of theclass))))
+                          );)
                     box
                     )))
+
 
 
 (defmethod! clearmaq ((self ommaquette))

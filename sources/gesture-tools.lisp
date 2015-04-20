@@ -163,7 +163,18 @@
             ))
 |#
 
+; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. If nil returns all rows one by one
+; or the name of the row (slot) is provided, too, so it can be chosen inside the function
+; 
+
 (defmethod! process-rows ((process t) (array class-array))
+            :icon '(264)
+            (let ((thearray (clone array)))
+                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+            thearray
+            ))
+
+(defmethod! process-row ((process t) (slotname string) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
                     (apply process (list thearray)) ;what's the difference to 'funcall' ?
@@ -195,6 +206,19 @@
                       (process-array-comp theprocess array)) process)
             )
 
+(defmethod! process-array-slot ((process t) (slotname string) (array class-array))
+            :icon '(264)
+            (let* ((thearray (clone array))
+                  ;(theslotvalues (symbol-function slotname)) ;later I should use symbol-function... but no time for now
+                  (theslotvalues (array-field array slotname))
+                  (thenewvalues 
+                   (loop for value in theslotvalues collect 
+                         (funcall process value))))
+              (array-field thearray slotname thenewvalues)
+              thearray
+              ))
+
+; old
 (defmethod! process-array-slot ((process t) (slotname string) (array class-array))
             :icon '(264)
             (let* ((thearray (clone array))
