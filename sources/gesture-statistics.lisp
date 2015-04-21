@@ -40,6 +40,55 @@
                       )
               thelist))
 
+; euclidean distance
+(defun ^2 (n) (* n n))
+
+; not sure whether the 
+(defun euc-distance (vector1 vector2)
+  (let ((accum 0.0))
+    (mapc #'(lambda (x y) (incf accum (^2 (- x y)))) (list! vector1) (list! vector2))
+    (sqrt accum)))
+
+
+; this assumes that items are lists
+
+(defmethod! euclidean-distance ((variable1 list) (variable2 list))
+            (mapcar (lambda (x y) (euc-distance x y )) variable1 variable2)
+            )
+
+(defmethod! euclidean-distance ((variable1 list) (variable2 number))
+            (mapcar (lambda (x) (euc-distance x (repeat-n variable2 (length (list! (car variable1)))) )) variable1)
+            )
+
+
+; magnitude vector
+; maybe this should explicitly state that if the second list is nil it becomes "0"?
+(defmethod! magnitude ((self list))
+            :icon '(02) 
+            :initvals '(nil)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :numouts 1
+            :doc "calculates the standard deviation or sample standard deviation."
+            (
+            (euclidean-distance self 0)
+            )
+
+(defmethod! magnitude ((self bpf))              
+            (simple-bpf-from-list (x-points self) (euclidean-distance (y-points self) 0) 'bpf (decimals self))
+            )
+
+(defmethod! magnitude ((self bpc))              
+            (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
+            )
+
+(defmethod! magnitude ((self 3dc))              
+            (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
+            )
+
+(defmethod! magnitude ((self 3d-trajectory))              
+            (simple-bpf-from-list (times self) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
+            )
+
 (defmethod! om-sum ((self list))
                   (loop for item in self
                   sum item)
@@ -69,15 +118,19 @@
             (/ (om-sum^2 (om- self (mean self))) (- (length self) 1))
             )
 
-; standard deviation 
-(defmethod! stdev ((self list))
+; standard deviation / sample standard deviation
+(defmethod! stdev ((self list) &optional (Bessel nil))
+            :initvals '(nil t)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :numouts 1
+            :doc "calculates the standard deviation or sample standard deviation."
+            (if Bessel
+                (sqrt (/ (om-sum^2 (om- self (mean self))) (- (length self) 1)))
             (sqrt (/ (om-sum^2 (om- self (mean self))) (length self)))
-            )
+            ))
 
-; sample standard deviation
-(defmethod! sstdev ((self list))
-            (sqrt (/ (om-sum^2 (om- self (mean self))) (- (length self) 1)))
-            )
+
+
 
 
 ;*** sine/cosine functions for lists
