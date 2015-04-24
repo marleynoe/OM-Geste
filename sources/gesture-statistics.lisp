@@ -5,9 +5,6 @@
 ;dot.jab is interesting! 
 ;dot.region can also be interesting!
 
-
-;for the 2D derivation I could use the euclidean distance function, for instance.
-
 (defmethod! differentiate ((self list) (order integer))
             :icon '(02) 
             :initvals '(nil 1)
@@ -371,3 +368,96 @@
 (defmethod! centroid ((self bpf))
             (centroid (point-pairs self))
             )
+
+
+(defmethod! find-peaks ((self list) (mode t) &key (numpeaks nil) (test '>) (decimals 10)) ; instead of numpeaks could be a slope threshold or similar
+            :icon '(233)
+            :indoc '("a bpf or point-list" "mode (Peak or Trough)" "Number of Peaks to find" "sorting function for result" "decimals for calculation" "delta step to determine peak or trough")
+            :initvals '(((0 1) (5 10) (10 1)) peak nil > 10) ; no quote needed because it is already quoted
+            :menuins '((1 (("peak" 'peak) ("trough" 'trough))) (3 ((">" >) ("<" <))))
+            :doc "finds the n highest/lowest peaks or troughs in a bpf or point-list"
+            (let* ((transpoints (mat-trans self))
+                   (thederivativepoints (list (first transpoints) (differentiate (second transpoints) 1)))
+
+                   (zerox (remove-duplicates (y-transfer (mat-trans thederivativepoints) 0.0 decimals))) ; give a list of "X" for zero crosses
+                   ;(thecrossingfrequencies (x-transfer thedxpoints (om- thezerocrossings deltaparam) decimals))
+                   (secondderivative (list (first transpoints) (differentiate (second thederivativepoints) 1)))
+                   (signs (x-transfer (mat-trans secondderivative) zerox))
+                   (peakpos nil)
+                   (troughpos nil))
+              ;find maxima and minima and write into peakpos and throughpos
+              (loop for item in signs for x from 0 to (length signs) do
+                    (unless (= item 0)
+                      (if (< item 0) 
+                          (push x peakpos)
+                        (push x troughpos)))
+                    finally (progn
+                              (setf peakpos (reverse peakpos))
+                              (setf troughpos (reverse troughpos))))
+              ;look up x-values for peakpos and throughpos and write into x-peaks and x-troughs, respectively
+              (let* ((x-peaks (posn-match zerox peakpos))
+                     (x-troughs (posn-match zerox troughpos))
+                     (peakpoints (mat-trans (list x-peaks (x-transfer self x-peaks))))
+                     (troughpoints (mat-trans (list x-troughs (x-transfer self x-troughs))))
+                     )
+                (if numpeaks
+                    (let* ((peaksandtroughs (sort-list (x-append peakpoints troughpoints) :test '< :key 'first))
+                           (euc-distance (om^ (euclidean-distance (x-append (list (car peaksandtroughs)) peaksandtroughs) peaksandtroughs) 2)) ;maybe squared?
+                           (summed-distances (loop for 1st in euc-distance
+                                                   for 2nd in (cdr (x-append euc-distance (car (last euc-distance)))) collect
+                                                   (+ 1st 2nd)))
+                           (dummy (print (list (length peaksandtroughs) (length summed-distances) (length zerox))))
+                           (points-and-distance (loop for pat in peaksandtroughs 
+                                                      for sdt in summed-distances collect
+                                                      (x-append sdt pat)
+                                                      )))
+                           (if (equal mode 'peak)
+                               (let* ((thepeaks (sort-list (posn-match points-and-distance peakpos) :test test :key 'first)) ; change 'test'
+                                      (cleanpeaks (loop for point in thepeaks collect
+                                                       (last-n point 2)
+                                                       )))
+                                 (first-n cleanpeaks numpeaks))
+                                 ;cleanpeaks)
+
+                             (let* ((thetroughs (sort-list (posn-match points-and-distance troughpos) :test test :key 'first))
+                                    (cleantroughs (loop for point in thetroughs collect
+                                                        (last-n point 2)
+                                                        )))
+                               (first-n cleantroughs numpeaks)))
+                           )
+                  (if (equal mode 'peak)
+                  peakpoints
+                troughpoints)
+                  ))))
+              
+
+; peaks and troughs should always switch otherwise it's a mistake! 
+              
+(defmethod! find-peaks ((self bpf) (mode t) &key (numpeaks nil) (test '>) (decimals 10))
+            (let ((point-list (mat-trans (find-peaks (point-pairs self) mode :numpeaks numpeaks :test test :decimals decimals))))
+              (simple-bpf-from-list (first point-list) (second point-list) 'bpf decimals)
+              ))
+
+
+(defun min-x-const-q-distance (list distance-factor)
+    (remove-duplicates list 
+                       :test #'(lambda (a b) 
+                                 (< (- (first a) (first b)) (* (first a) distance-factor))
+                                 )
+                       ))
+
+(defun min-x-distance (list distance)
+    (remove-duplicates list 
+                       :test #'(lambda (a b) 
+                                 (< (- (first a) (first b)) distance)
+                                 )
+                       ))
+
+(defun min-x-distance-reverse (list distance)
+    (remove-duplicates list 
+                       :test #'(lambda (a b) 
+                                 (< (- (first b) (first a)) distance)
+                                 )
+                       ))
+
+
