@@ -154,10 +154,58 @@
 (defmethod! gesture-slot (descriptor name)
             :icon '(335) ;'(333)
             
-            :menuins '((1 (("onset" "onset") ("duration" "duration") ("magnitude" "magnitude") 
-                           ("norm" "norm") ("corpus-index" "corpus-index") ("file-index" "file-index") ("filepath" "filepath"))))
+           ; :menuins '((1 (("onset" "onset") ("duration" "duration") ("magnitude" "magnitude") 
+           ;                ("norm" "norm") ("corpus-index" "corpus-index") ("file-index" "file-index") ("filepath" "filepath"))))
             ;(cadr (find name descriptor :test 'string-equal :key 'car)))
             (cadr (find name descriptor :test 'string-equal :key 'car)))
+
+
+;;; trying different mapping function
+
+(defmethod! mapping-class ((self gesture-model) matching-fun theclass)
+            :icon '(333)
+            ;(print "it's me")
+            (compile-patch matching-fun)
+            (loop for col from 0 to (1- (numcols self)) collect
+                  (let* ((box (make-instance (type-of theclass)))
+                         (thecontrols (lcontrols self))
+                         (vals 
+                          (multiple-value-list 
+                           (funcall (intern (string (code matching-fun)) :om) ;matching fun = patch in lambda mode
+
+                                   ; (loop for slot in (get-all-initargs-of-class (type-of self)) collect
+                                   ;       (print (list (name slot)
+                                   ;             (get-array-val self (name slot) col)))))))
+                                   ; a list of ( (("name1" val@col1) ("name2" val@col1)) (("name1" val@col2) ("name2" val@col2)))                                   
+                                   ; (lcontrols self))))
+
+                                    (loop for slot in thecontrols collect
+                                          (list (string (first slot)) (nth col (second slot)))))))
+                                                 ;slot))))
+                         (names (mapcar #'(lambda (out) 
+                                            (intern (frame-name out) :om))
+                                        (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
+                         (slots (print (mat-trans (list names vals)))))
+                    
+                    ;(setf (free-store box) vals)
+                    
+                    (loop for item in slots do
+                          ;(let ((theslotname (car item)))
+                          (if (subtypep (type-of box) class-array)
+                              
+                              (set-array (type-of box)  finaldata)
+                            
+                            (if (is-om-slot? (type-of box) (car item))
+                              
+                              (set-slot box (car item) (cadr item))
+
+                              ;(setf (theslotname box) (cadr item)) --> this doesn't work
+                            (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of theclass))))
+                          );)
+                    box
+                    )))
+
+(set-array  
 
 #|
 (defmethod! mapping ((self gesture-model) matching-fun theclass)

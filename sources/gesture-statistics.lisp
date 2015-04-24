@@ -5,26 +5,76 @@
 ;dot.jab is interesting! 
 ;dot.region can also be interesting!
 
-#|
-(defmethod! differentiate ((self list) (order number))
-            (let* ((thelist (x-append (car self) self))
-                   (1stdiff (x->dx thelist)))
-              (loop for i from 1 to order do
-                    (setf thelist (x->dx thelist))
-                    )
-              thelist))
-|#
 
-(defmethod! differentiate ((self list) (order number))
+;for the 2D derivation I could use the euclidean distance function, for instance.
+
+(defmethod! differentiate ((self list) (order integer))
+            :icon '(02) 
+            :initvals '(nil 1)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :numouts 1
+            :doc "Calculates the nth-order finite difference."           
             (let ((thelist self))
               (loop for i from 1 to order do
                     (let ((diff (x->dx thelist)))
                       (setf thelist (x-append (car diff) diff))
                       ))
               thelist))
+
+(defmethod! differentiate ((self bpf) (order integer))
+            (let ((thelist (y-points self)))
+              (loop for i from 1 to order do
+                    (let ((diff (x->dx thelist)))
+                      (setf thelist (x-append (car diff) diff))
+                      ))
+              (simple-bpf-from-list (x-points self) thelist 'bpf (decimals self))
+              ))
+
+(defmethod! differentiate ((self bpc) (order integer))
+            (let ((ylist (y-points self))
+                  (xlist (x-points self)))
+              (loop for i from 1 to order do
+                    (let ((xdiff (x->dx xlist))
+                          (ydiff (x->dx ylist)))
+                      (setf xlist (x-append (car xdiff) xdiff))
+                      (setf ylist (x-append (car ydiff) ydiff))
+                      ))
+              (simple-bpf-from-list xlist ylist 'bpc (decimals self))
+              ))
+
+(defmethod! differentiate ((self 3dc) (order integer))
+            (let ((ylist (y-points self))
+                  (xlist (x-points self))
+                  (zlist (z-points self)))
+              (loop for i from 1 to order do
+                    (let ((xdiff (x->dx xlist))
+                          (ydiff (x->dx ylist))
+                          (zdiff (x->dx zlist)))
+                      (setf xlist (x-append (car xdiff) xdiff))
+                      (setf ylist (x-append (car ydiff) ydiff))
+                      (setf zlist (x-append (car zdiff) zdiff))
+                      ))
+              (3dc-from-list xlist ylist zlist '3dc (decimals self))
+              ))
+
+(defmethod! differentiate ((self 3d-trajectory) (order integer))
+            (let ((ylist (y-points self))
+                  (xlist (x-points self))
+                  (zlist (z-points self)))
+              (loop for i from 1 to order do
+                    (let ((xdiff (x->dx xlist))
+                          (ydiff (x->dx ylist))
+                          (zdiff (x->dx zlist)))
+                      (setf xlist (x-append (car xdiff) xdiff))
+                      (setf ylist (x-append (car ydiff) ydiff))
+                      (setf zlist (x-append (car zdiff) zdiff))
+                      ))
+              (traject-from-list xlist ylist zlist (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
+              ))
               
 
-(defmethod! integrate ((self list) (order number))
+;doesn't this need an optional 'start' value?
+(defmethod! integrate ((self list) (order integer))
             (let ((thelist self))
               (loop for i from 1 to order do
                     (let ((diff (dx->x (car thelist) thelist)))
@@ -32,18 +82,98 @@
                       ))
               thelist))
 
-(defmethod! integrate ((self list) (order number))
+(defmethod! integrate ((self list) (order integer))
             (let ((thelist (cdr self)))
-              (loop for i from 1 to order do
-                    ;(let ((diff (dx->x (car thelist) thelist)))
+              (loop for i from 1 to order do                 
                       (setf thelist (dx->x 0 thelist))
                       )
               thelist))
 
-; euclidean distance
+(defmethod! integrate ((self bpf) (order integer))
+            (let ((thelist (cdr (y-points self)))) ; ???
+              (loop for i from 1 to order do                 
+                      (setf thelist (dx->x 0 thelist))
+                      )
+              (simple-bpf-from-list (x-points self) thelist 'bpf (decimals self))
+              ))
+
+(defmethod! integrate ((self bpc) (order integer))
+            (let ((xlist (cdr (x-points self)))
+                  (ylist (cdr (y-points self)))) ; ???
+              (loop for i from 1 to order do                 
+                      (setf xlist (dx->x 0 xlist))
+                      (setf ylist (dx->x 0 ylist))
+                      )
+              (simple-bpf-from-list xlist ylist 'bpc (decimals self))
+              ))
+
+(defmethod! integrate ((self 3dc) (order integer))
+            (let ((xlist (cdr (x-points self)))
+                  (ylist (cdr (y-points self)))
+                  (zlist (cdr (z-points self))))
+              (loop for i from 1 to order do                 
+                      (setf xlist (dx->x 0 xlist))
+                      (setf ylist (dx->x 0 ylist))
+                      (setf zlist (dx->x 0 zlist))
+                      )
+              (3dc-from-list xlist ylist zlist '3dc (decimals self))
+              ))
+
+(defmethod! integrate ((self 3d-trajectory) (order integer))
+            (let ((xlist (cdr (x-points self)))
+                  (ylist (cdr (y-points self)))
+                  (zlist (cdr (z-points self))))
+              (loop for i from 1 to order do                 
+                      (setf xlist (dx->x 0 xlist))
+                      (setf ylist (dx->x 0 ylist))
+                      (setf zlist (dx->x 0 zlist))
+                      )
+              (traject-from-list xlist ylist zlist (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
+              ))
+
+; ----------------------------- 
+
+; root-mean-square
+(defun rootmeansquare (self)
+            (sqrt (om* (om/ 1 (length self)) (om-sum^2 self)))
+            )
+
+
+(defmethod! rms ((self list) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
+             :icon '(02) 
+            :initvals '(nil 0)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :numouts 1
+            :doc "calculates the absolute magnitude of an n-dimensional vector."     
+            (let ((thelist self))
+              (if (numberp windowsize)
+                  (let ;((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist))) ; padding - only if I need the same number of values
+                      ((windowedlist (x-append (car thelist) thelist)))
+                    (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
+                                        (rootmeansquare (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize))))
+                    thelist)
+                (rootmeansquare thelist)
+                )))
+
+(defmethod! rms ((self bpf) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
+            (let* ((thexpoints (if (= hopsize 1) (x-points self) '(1)))
+                   (thelist (y-points self))
+                   (therootmeansquarelist (if (numberp windowsize)
+                                    (let ;((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist))) ; padding - only if I need the same number of values
+                                        ((windowedlist (x-append (car thelist) thelist)))
+                                      (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
+                                                          (rootmeansquare (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize))))
+                                      thelist)
+                                 (rootmeansquare thelist))
+                               ))
+              (simple-bpf-from-list thexpoints therootmeansquarelist 'bpf (decimals self))
+              ))
+
+
+; square function
 (defun ^2 (n) (* n n))
 
-; not sure whether the 
+
 (defun euc-distance (vector1 vector2)
   (let ((accum 0.0))
     (mapc #'(lambda (x y) (incf accum (^2 (- x y)))) (list! vector1) (list! vector2))
@@ -51,7 +181,6 @@
 
 
 ; this assumes that items are lists
-
 (defmethod! euclidean-distance ((variable1 list) (variable2 list))
             (mapcar (lambda (x y) (euc-distance x y )) variable1 variable2)
             )
@@ -62,33 +191,32 @@
 
 
 ; magnitude vector
-; maybe this should explicitly state that if the second list is nil it becomes "0"?
-(defmethod! magnitude ((self list))
+(defmethod! magnitude ((self list) &optional (offset 0))
             :icon '(02) 
-            :initvals '(nil)
+            :initvals '(nil 0)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
             :numouts 1
-            :doc "calculates the standard deviation or sample standard deviation."
-            (
-            (euclidean-distance self 0)
+            :doc "calculates the absolute magnitude of an n-dimensional vector."           
+            (euclidean-distance self offset)
             )
 
-(defmethod! magnitude ((self bpf))              
+(defmethod! magnitude ((self bpf) &optional (offset 0))              
             (simple-bpf-from-list (x-points self) (euclidean-distance (y-points self) 0) 'bpf (decimals self))
             )
 
-(defmethod! magnitude ((self bpc))              
+(defmethod! magnitude ((self bpc) &optional (offset 0)) ;when times is not known use 'normalized' stepsize of 1
             (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
             )
 
-(defmethod! magnitude ((self 3dc))              
+(defmethod! magnitude ((self 3dc) &optional (offset 0))              
             (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
             )
 
-(defmethod! magnitude ((self 3d-trajectory))              
+(defmethod! magnitude ((self 3d-trajectory) &optional (offset 0))              
             (simple-bpf-from-list (times self) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
             )
 
+; summing function
 (defmethod! om-sum ((self list))
                   (loop for item in self
                   sum item)
@@ -103,77 +231,57 @@
 ; Need to make the average / arithmetic mean (SimpleArithmeticMean) for vectors.
 ; a defmethod! for lists-of-lists (each sublist being a vector)
 
-(defun mean (list)
+(defun themean (list)
   (/ (om-sum list) (length list))
   )
 
 
-;could distinguish these 2 cases with an optional input menu for "Bessel" or "uncorrected"
-
-(defmethod! variance ((self list))
-            (/ (om-sum^2 (om- self (mean self))) (length self))
-            )
-
-(defmethod! svariance ((self list))
-            (/ (om-sum^2 (om- self (mean self))) (- (length self) 1))
-            )
-
-; standard deviation / sample standard deviation
-(defmethod! stdev ((self list) &optional (Bessel nil))
-            :initvals '(nil t)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
-            :numouts 1
-            :doc "calculates the standard deviation or sample standard deviation."
-            (if Bessel
-                (sqrt (/ (om-sum^2 (om- self (mean self))) (- (length self) 1)))
-            (sqrt (/ (om-sum^2 (om- self (mean self))) (length self)))
+; variance / sample variance
+(defmethod! variance ((self list) &optional (bessel nil))
+            (if (and bessel (> (length self) 2))
+                (/ (om-sum^2 (om- self (mean self))) (- (length self) 1))
+              (/ (om-sum^2 (om- self (mean self))) (length self))
             ))
 
 
-
-
-
-;*** sine/cosine functions for lists
-
-(defmethod! om-sin ((arg1 number))  
-  :initvals '(nil)
-  :icon '(209) 
-  :indoc '("list")
-  :doc "Sine for every item in list."
-  (sin arg1))
-
-(defmethod! om-sin ((arg1 list))   
-  (mapcar #'(lambda (input)
-              (sin input)) arg1))
-
-;*** cosine function for lists
-
-(defmethod! om-cos ((arg1 number))  
-  :initvals '(nil) 
-  :icon '(209) 
-  :indoc '("list")
-  :doc "Cosine for every item in list."
-  (cos arg1))
-
-(defmethod! om-cos ((arg1 list))   
-  (mapcar #'(lambda (input)
-              (cos input)) arg1))
-
-(defmethod! om-scale-exp ((self t) (minout number) (maxout number) (exponent number) &optional (minin 0) (maxin 0))
-  :initvals '(1 0 1 1) 
-  :indoc '("number or list"  "a number" "a number" "an exponent")
-  :icon '(209)
-  :doc 
-  "Scales <self> (a number or list of numbers) considered to be in the interval [<minin> <maxin>] towards the interval [<minout> <maxout>].
-
-If [<minin> <maxin>] not specified or equal to [0 0], it is bound to the min and the max of the list.
-
-Ex. (om-scale 5 0 100 0 10)  => 50
-Ex. (om-scale '(0 2 5) 0 100 0 10)  => (0 20 50)
-Ex. (om-scale '(0 2 5) 0 100)  => (0 40 100)
- "
-  (om-scale (om^ (om-scale self 0. 1. minin maxin) exponent) minout maxout 0. 1.)
+; standard deviation / sample standard deviation
+(defun standev (self bessel)
+  (if (and bessel (> (length self) 2)) ;prevent division by zero
+      (sqrt (/ (om-sum^2 (om- self (mean self))) (- (length self) 1)))
+    (sqrt (/ (om-sum^2 (om- self (mean self))) (length self))))
   )
+
+
+(defmethod! stdev ((self list) &optional (bessel nil) (windowsize nil) (hopsize 1))
+            :initvals '(nil nil 1)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "calculates sample standard deviation")
+            :numouts 1
+            :doc "calculates the standard deviation or sample standard deviation."
+            (let ((thelist self))
+              (if (numberp windowsize)
+                  (let ((windowedlist (x-append (car thelist) thelist)))
+                    (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
+                                        (let ((thewindow (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize)))                     
+                                          (standev thewindow bessel)
+                                          ))))
+                (setf thelist (standev thelist bessel))
+                )
+              thelist)
+            )
+
+(defmethod! stdev ((self bpf) &optional (bessel nil) (windowsize nil) (hopsize 1))
+            (let ((xpoints (if (= hopsize 1) (x-points self) '(1)))
+                  (ypoints (stdev (y-points self) bessel windowsize hopsize)))
+              (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
+              ))
+
+(defmethod! stdev ((self 3dc) &optional (bessel nil) (windowsize nil) (hopsize 1))
+            (let ((xpoints (stdev (x-points self) bessel windowsize hopsize))
+                  (ypoints (stdev (y-points self) bessel windowsize hopsize))
+                  (zpoints (stdev (z-points self) bessel windowsize hopsize)))
+              (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
+              ))
+
 
 (defmethod! dot-product ((firstlist list) (secondlist list))
             (om-sum (om* firstlist secondlist))
@@ -247,18 +355,19 @@ Ex. (om-scale '(0 2 5) 0 100)  => (0 40 100)
               )
             )
 
-(defmethod! centroid ((freqs list) (amps list))
-           (/
-            (loop for x in freqs 
-                  for y in amps
-                  finally
-                  sum (* x y)
-                  )
-            (+ (om-sum amps) 0.000001) ;avoid division by zero
-           ))
+(defmethod! centroid ((tuples list))
+            (let* ((translist (mat-trans tuples))
+                   (xpoints (first translist))
+                   (ypoints (om-abs (second translist))))
+              (/
+               (loop for x in xpoints 
+                     for y in ypoints
+                     finally
+                     sum (* x y)
+                     )
+               (+ (om-sum ypoints) 0.000001) ;avoid division by zero
+               )))
 
-#|
-(defmethod! rms ((amps list) (windowsize number))
-            (sqrt (mean (om-sum^2 amps)))
-           )
-|#
+(defmethod! centroid ((self bpf))
+            (centroid (point-pairs self))
+            )

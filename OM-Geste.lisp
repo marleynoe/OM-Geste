@@ -24,16 +24,6 @@
 
 
 
-(mapcar #'(lambda (file) (compile&load (om-relative-path '("sources") file )))
-        '(
-          "gesture-objects"
-          "gesture-editor"
-          "gesture-tools"
-          "gesture-filters"
-          "gesture-statistics"
-          "mapping"
-          ))
-
 (defparameter *om-geste-lib-path* (make-pathname :directory (pathname-directory *load-pathname*)))
 
 
@@ -70,14 +60,27 @@
    
 (recursive-load-classes (om-relative-path '("sources" "classes") nil) *current-lib*)
 
+(mapcar #'(lambda (file) (compile&load (om-relative-path '("sources") file )))
+        '(
+          "gesture-objects"
+          "gesture-editor"
+          "gesture-tools"
+          "gesture-filters"
+          "gesture-statistics"
+          "mapping"
+          ))
+
 ; here add the menu entries
 
 ;(sub-pack-name subpack-lists class-list function-list class-alias-list)
+
+#|
 (om::fill-library '(
                     ("Filters" nil nil (field-lowpass slot-lowpass slot-highpass) nil)
                     ()
                     )
 )
+|#
 
 (print "
 OM-Geste 0.1.0

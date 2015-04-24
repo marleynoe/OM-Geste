@@ -22,6 +22,7 @@
 
 ; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 ; a selection of streams form an SDIF/GDIF file
 (defclass! gesture-array ()
   ((datasrc :accessor datasrc :initarg :datasrc :initform nil)
@@ -75,3 +76,4 @@
              )
        ))
    self)
+
