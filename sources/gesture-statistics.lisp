@@ -6,9 +6,9 @@
 ;dot.region can also be interesting!
 
 (defmethod! differentiate ((self list) (order integer))
-            :icon '(02) 
+            :icon '(631) 
             :initvals '(nil 1)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of derivative")
             :numouts 1
             :doc "Calculates the nth-order finite difference."           
             (let ((thelist self))
@@ -70,8 +70,14 @@
               ))
               
 
+; ******* INTEGRATION *********
 ;doesn't this need an optional 'start' value?
 (defmethod! integrate ((self list) (order integer))
+            :icon '(631) 
+            :initvals '(nil 1)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of integration")
+            :numouts 1
+            :doc "Integrates values in <self>"    
             (let ((thelist self))
               (loop for i from 1 to order do
                     (let ((diff (dx->x (car thelist) thelist)))
@@ -137,9 +143,9 @@
 
 
 (defmethod! rms ((self list) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
-             :icon '(02) 
+            :icon '(631) 
             :initvals '(nil 0)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "size of window in samples" "hopsize" "padding")
             :numouts 1
             :doc "calculates the absolute magnitude of an n-dimensional vector."     
             (let ((thelist self))
@@ -189,9 +195,9 @@
 
 ; magnitude vector
 (defmethod! magnitude ((self list) &optional (offset 0))
-            :icon '(02) 
+            :icon '(631) 
             :initvals '(nil 0)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "if t calculates sample standard deviation")
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "defines the origin (default: 0)")
             :numouts 1
             :doc "calculates the absolute magnitude of an n-dimensional vector."           
             (euclidean-distance self offset)
@@ -250,8 +256,9 @@
 
 
 (defmethod! stdev ((self list) &optional (bessel nil) (windowsize nil) (hopsize 1))
+            :icon '(631)
             :initvals '(nil nil 1)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "calculates sample standard deviation")
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "calculates standard deviation / sample standard deviation")
             :numouts 1
             :doc "calculates the standard deviation or sample standard deviation."
             (let ((thelist self))
@@ -386,10 +393,10 @@
                    (peakpos nil)
                    (troughpos nil))
               ;find maxima and minima and write into peakpos and throughpos
-              (loop for item in signs for x from 0 to (length signs) do
+              (loop for item in signs for x from 0 to (length signs) do ; also, this structure? for j = 0 then (+ j 1)
                     (unless (= item 0)
                       (if (< item 0) 
-                          (push x peakpos)
+                          (push x peakpos)   ;probably better use append instead of push
                         (push x troughpos)))
                     finally (progn
                               (setf peakpos (reverse peakpos))

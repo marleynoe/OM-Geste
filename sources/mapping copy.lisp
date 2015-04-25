@@ -102,47 +102,78 @@
 
 ; think about arrays: maybe in that case I should rather set components than making different instances.
 ; also, the slots of the instances actually DO get set, but it's not visible in the editor. -> Jean??
-(defmethod! mapping ((self gesture-model) matching-fun theclass)
-            :icon '(333)
-            ;(print "it's me")
-            (compile-patch matching-fun)
+(defmethod! map-gesture ((self gesture-model) mapping-fun theclass)
+            :icon 02        
+            (compile-patch mapping-fun)
             (loop for col from 0 to (1- (numcols self)) collect
-                  (let* ((box (make-instance (type-of theclass)))
+                  (let* ((box (make-instance (print (type-of theclass))))
+                         ;(print (slot-definition-name (class-slots (class-of box))))
                          (thecontrols (lcontrols self))
                          (vals 
                           (multiple-value-list 
-                           (funcall (intern (string (code matching-fun)) :om) ;matching fun = patch in lambda mode
-
-                                   ; (loop for slot in (get-all-initargs-of-class (type-of self)) collect
-                                   ;       (print (list (name slot)
-                                   ;             (get-array-val self (name slot) col)))))))
-                                   ; a list of ( (("name1" val@col1) ("name2" val@col1)) (("name1" val@col2) ("name2" val@col2)))                                   
-                                   ; (lcontrols self))))
+                           (funcall (intern (string (code mapping-fun)) :om) ;matching fun = patch in lambda mode
 
                                     (loop for slot in thecontrols collect
                                           (list (string (first slot)) (nth col (second slot)))))))
-                                                 ;slot))))
+                                                
                          (names (mapcar #'(lambda (out) 
                                             (intern (frame-name out) :om))
-                                        (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
-                         (slots (print (mat-trans (list names vals)))))
-                    
-                    ;(setf (free-store box) vals)
-                    
-                    (loop for item in slots do
-                          ;(let ((theslotname (car item)))
-                            (if (is-om-slot? (type-of box) (car item))
-                              
-                              (set-slot box (car item) (cadr item))
+                                        (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
+                         
+                         (slots (mat-trans (list names vals))))
 
-                              ;(setf (theslotname box) (cadr item)) --> this doesn't work
-                            (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of theclass))))
-                          );)
+                    ; for now make it work with chords / notes
+                  ;  (if (subtypep (type-of theclass) class-array)
+                  ;      (set-array (type-of theclass) 1 (flat slots))
+                  ;    (
+                   
+
+                    (loop for item in (print slots) do
+                          ;(let ((theslotname (car item)))
+                                ;(theslotname (function (lambda (y) (car 
+                            
+                            (if (is-om-slot? (type-of box) (car item))
+                    ;          
+                              ;(set-slot box (car item) (cadr item));;
+                               ; (lambda (x) (setf (x box) (cadr item)) (car item))
+                              ;(setf (funcall (function theslotname) box) (cadr item))
+                              ;(setf (slot-value box (car item)) (cadr item))
+                              ;(setf ((symbol-function theslotname) box) (cadr item))
+                                ;(progn (print theslotname)
+                                ;  (setf ((string theslotname) box) (cadr item)))
+                              ;(funcall (function setf) theslotname box (card item))
+                              ;(setf (theslotname box) (cadr item))
+
+                              (set-class-slot (print box) (print (car item)) (print (cadr item)))
+
+                              ;(setf (funcall (symbol-function theslotname) box) (cadr item));; --> this doesn't work
+                                ;(print (get-all-slots-of-class (type-of box)))
+                           (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of theclass)))
+                          ))
+                    ;)
                     box
                     )))
 
+(defun thelooper (class slotlist valuelist)
+  (loop for slot in slotlist
+        for value in valuelist do
+        (set-class-slot class (print slot) (print value))
+        )
+  class)
+
+#|
+(setf thetestclass (make-instance 'chord))
+
+(set-class-slot thetestclass 'loffset '(2300 2400))
+
+(loffset thetestclass)
+|#
+
+(defun set-class-slot (class slot value)
+  (funcall (fdefinition `(setf ,slot)) value class))
 
 
+; syntactic sugar for "removealltemporalboxes"
 (defmethod! clearmaq ((self ommaquette))
             :icon 327
             :initvals '(nil)
@@ -161,7 +192,7 @@
 
 
 ;;; trying different mapping function
-
+#|
 (defmethod! mapping-class ((self gesture-model) matching-fun theclass)
             :icon '(333)
             ;(print "it's me")
@@ -193,9 +224,9 @@
                           ;(let ((theslotname (car item)))
                           (if (subtypep (type-of box) class-array)
                               
-                              (set-array (type-of box)  finaldata)
+                              (set-array (type-of box) finaldata)
                             
-                            (if (is-om-slot? (type-of box) (car item))
+                            (if (is-om-slot? (type-of box) (car printitem))
                               
                               (set-slot box (car item) (cadr item))
 
@@ -204,8 +235,7 @@
                           );)
                     box
                     )))
-
-(set-array  
+|#
 
 #|
 (defmethod! mapping ((self gesture-model) matching-fun theclass)

@@ -25,7 +25,7 @@
 
 
 (defparameter *om-geste-lib-path* (make-pathname :directory (pathname-directory *load-pathname*)))
-
+;(clean-sources *om-geste-lib-path*)
 
 #|
 (defparameter *geste-classes* '(
@@ -74,13 +74,16 @@
 
 ;(sub-pack-name subpack-lists class-list function-list class-alias-list)
 
-#|
+
 (om::fill-library '(
-                    ("Filters" nil nil (field-lowpass slot-lowpass slot-highpass) nil)
+                    ("Filters" nil nil (slide-filter sma wma ema smm) nil)
+                    ("Statistics" nil nil (rms magnitude variance stdev covariance correlation centroid) nil)
+                    ("Utilities" nil nil (integrate differentiate find-peaks) nil)
+                    ("Matrices" nil nil (add-row remove-row) nil)
                     ()
                     )
 )
-|#
+
 
 (print "
 OM-Geste 0.1.0

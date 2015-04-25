@@ -23,6 +23,7 @@
                           ))
                     thelist))
 
+
 (defmethod! slide-filter ((self bpf) (slide number) &optional (recursion 1))
             (let ((xpoints (x-points self))
                   (ypoints (slide-f(thelist (x-append (cdr self) (car (last self))))ilter (y-points self) slide recursion)))
@@ -51,7 +52,7 @@
 ; this one is with hopsize - what can this be useful for?
 (defmethod! sma2 ((self list) (windowsize number) (hopsize number) &optional (recursion 1))
             :icon 631  
-            :initvals '(nil 5 1 1)
+            :initvals '(nil 5 1 1 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
             :doc "Implements the simple-moving-average: the arithmetic mean of a list of numbers in a sliding window"
@@ -84,11 +85,27 @@
                   thelist))
 |#
 
+#|
+; the subseq is interesting.
+(om::defmethod! low-pass  ((data list) (window number)) 
+  :initvals '('(1 2 3 4 5 6)   100 )
+  :indoc '("list of data"  "window size in samples data" )
+  :icon '(213) 
+  :numouts 1
+  :doc   " traditional Low pass filter, where <list> is the data flow to filter and <window> 
+is the parameter to calculate the window delay. The <window delay> will be (2*window + 1)"
+  
+  (om::x-append (om::first-n data (1- window))
+                (loop for x in data
+                      for i from window to (length data)
+                      collect (om::om-mean (subseq data (- i window) i)))))
+|#
+
 ; moving average filters introduce lag which should be compensated for by shifting by half the window length
 ; I need to keep the same number of sample points because of the x-values in the bpf (time) - otherwise need to resample the bpf
 
 (defmethod! sma ((self list) (windowsize number) &optional (recursion 1))
-            :icon 631  
+            :icon '(631)  
             :initvals '(nil 5 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -129,7 +146,7 @@
 ; weighted moving average
 
 (defmethod! wma ((self list) (windowsize number) &optional (recursion 1))
-            :icon 631  
+            :icon '(631)   
             :initvals '(nil 5 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -164,7 +181,7 @@
 
 ; exponential moving average
 (defmethod! ema ((self list) (alpha number) &optional (recursion 1))
-            :icon 631  
+            :icon '(631)  
             :initvals '(nil 0.1 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -201,7 +218,7 @@
 
 ; simple-moving-median
 (defmethod! smm ((self list) (windowsize number) &optional (recursion 1))
-            :icon 631  
+            :icon '(631)  
             :initvals '(nil 5 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1

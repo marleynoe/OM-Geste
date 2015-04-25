@@ -27,11 +27,11 @@
       timearray
       )))
 
+
 ; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio!
 ; Need to find a way to make temporal selections (extraction from the gesture model)
 ; a) means to re-segment the model and extract a component
 ; b) could have a function that merges the data together and then segments it and returns the object, for example. (A bit like the gesture-array - time range) 
-
 
 ;datalists is a row of the matrix (instance) of lists (parameters)
 
