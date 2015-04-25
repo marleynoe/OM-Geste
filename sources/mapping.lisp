@@ -16,7 +16,7 @@
 ;along with this program; if not, write to the Free Software
 ;Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,10 USA.
 ;
-;Authors: M. Schumacher
+;Authors: M. Schumacher, J. Bresson
 
 (in-package :om)
 
@@ -51,12 +51,15 @@
                          
                          ;(slots (print (mat-trans (list names vals)))))
 
-                         ; slots2 and slots seem to be THE SAME - yet one throws an error the other doesn't!
+
 
                          (slots2 (print (list names vals)))                        
                          (slots (print '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))))
-                    (print (type-of (caar slots2)))
-                    (print (type-of (caar slots)))
+                    
+                    
+
+                    ;(print (type-of (caar slots2)))
+                    ;(print (type-of (caar slots)))
                            
 
                     ; for now make it work with chords / notes
@@ -65,7 +68,11 @@
                   ;    (
                    ;(loop for item in (print slots) do
                     ;(print (car slots))
+
+                    ; Try with 'slots' and 'slots2' : one works the other doesn't (symbols are different??)
+
                     (thelooper obj-instance (car slots2) (cadr slots2))
+
                     ;)
                     #|
                     (loop for item in (print slots) do                       
@@ -93,10 +100,12 @@
                     obj-instance
                     )))
 
+; do-initialize might be a possibility
+
+
 #|
 (setf thetestlist '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))
 (setf thetestclass (make-instance 'chord))
-
 
 (thelooper thetestclass (car thetestlist) (cadr thetestlist))
 |#
@@ -109,16 +118,9 @@
   class)
 
 
-#|
-(setf thetestclass (make-instance 'chord))
-
-(set-class-slot thetestclass 'loffset '(2300 2400))
-
-(loffset thetestclass)
-|#
-
 (defun set-class-slot (class slot value)
   (funcall (fdefinition `(setf ,slot)) value class))
+
 
 
 ; syntactic sugar for "removealltemporalboxes"
@@ -131,87 +133,6 @@
            )
 
 (defmethod! gesture-slot (descriptor name)
-            :icon '(335) ;'(333)
-            
-           ; :menuins '((1 (("onset" "onset") ("duration" "duration") ("magnitude" "magnitude") 
-           ;                ("norm" "norm") ("corpus-index" "corpus-index") ("file-index" "file-index") ("filepath" "filepath"))))
-            ;(cadr (find name descriptor :test 'string-equal :key 'car)))
+            :icon '(335)
             (cadr (find name descriptor :test 'string-equal :key 'car)))
 
-
-;;; trying different mapping function
-#|
-(defmethod! mapping-class ((self gesture-model) matching-fun theclass)
-            :icon '(333)
-            ;(print "it's me")
-            (compile-patch matching-fun)
-            (loop for col from 0 to (1- (numcols self)) collect
-                  (let* ((box (make-instance (type-of theclass)))
-                         (thecontrols (lcontrols self))
-                         (vals 
-                          (multiple-value-list 
-                           (funcall (intern (string (code matching-fun)) :om) ;matching fun = patch in lambda mode
-
-                                   ; (loop for slot in (get-all-initargs-of-class (type-of self)) collect
-                                   ;       (print (list (name slot)
-                                   ;             (get-array-val self (name slot) col)))))))
-                                   ; a list of ( (("name1" val@col1) ("name2" val@col1)) (("name1" val@col2) ("name2" val@col2)))                                   
-                                   ; (lcontrols self))))
-
-                                    (loop for slot in thecontrols collect
-                                          (list (string (first slot)) (nth col (second slot)))))))
-                                                 ;slot))))
-                         (names (mapcar #'(lambda (out) 
-                                            (intern (frame-name out) :om))
-                                        (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
-                         (slots (print (mat-trans (list names vals)))))
-                    
-                    ;(setf (free-store box) vals)
-                    
-                    (loop for item in slots do
-                          ;(let ((theslotname (car item)))
-                          (if (subtypep (type-of box) class-array)
-                              
-                              (set-array (type-of box) finaldata)
-                            
-                            (if (is-om-slot? (type-of box) (car printitem))
-                              
-                              (set-slot box (car item) (cadr item))
-
-                              ;(setf (theslotname box) (cadr item)) --> this doesn't work
-                            (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of theclass))))
-                          );)
-                    box
-                    )))
-|#
-
-#|
-(defmethod! mapping ((self gesture-model) matching-fun theclass)
-            :icon '(333)
-            (compile-patch matching-fun)
-            (loop for col from 0 to (1- (numcols self)) collect
-                  (let* ((box (make-instance 'temporalbox)) ;here "theclass" should be the 'type-of
-                         (vals 
-                          (multiple-value-list 
-                           (funcall (intern (string (code matching-fun)) :om)
-                                    (loop for slot in (get-all-initargs-of-class (type-of self)) collect
-                                          (list (name slot)
-                                                (get-array-val self (name slot) col))))))
-                         (names (mapcar #'(lambda (out) 
-                                            (intern (frame-name out) :om))
-                                        (sort (find-class-boxes (boxes matching-fun) 'omout) '< :key 'indice)))
-                         (slots (mat-trans (list names vals))))
-                    
-                    (setf (free-store box) vals)
-                    
-                    (loop for item in slots do
-                          (if (is-om-slot? (type-of box) (car item))
-                              
-                              (set-slot box  (car item) (if (floatp (cadr item))
-                                                            (om-round (cadr item))
-                                                          (cadr item)))
-                            (om-beep-msg (format nil "Error: slot ~A does not exist in class TemporalBox !" (car item))))
-                          )
-                    box
-                    )))
-|#

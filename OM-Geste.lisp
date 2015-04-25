@@ -64,7 +64,7 @@
         '(
           "gesture-objects"
           "gesture-editor"
-          "gesture-tools"
+          "matrix-tools"
           "gesture-filters"
           "gesture-statistics"
           "mapping"
@@ -79,7 +79,7 @@
                     ("Filters" nil nil (slide-filter sma wma ema smm) nil)
                     ("Statistics" nil nil (rms magnitude variance stdev covariance correlation centroid) nil)
                     ("Utilities" nil nil (integrate differentiate find-peaks) nil)
-                    ("Matrices" nil nil (add-row remove-row) nil)
+                    ("Matrices" nil nil (add-row remove-row get-row get-column get-field) nil)
                     ()
                     )
 )
