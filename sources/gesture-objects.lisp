@@ -45,18 +45,19 @@
 ; here I should add methods for chord-seq (using the 'select' function), audio (using 'sound-cut') etc.
 
 (defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
-  (let* ((pos1 (position t1 timelist :test '<))
-         (pos2 (position t2 timelist :from-end t :test '>))
-         (times (append (list t1) 
-                        (range-filter timelist 
-                                      (list (list pos1 pos2)) 'pass)
-                        (list t2)))
-         (data (mapcar #'(lambda (d) 
-                           (append (list (x-transfer (mat-trans (list timelist d)) t1)) 
-                                   (range-filter d (list (list pos1 pos2)) 'pass)
-                                   (list (x-transfer (mat-trans (list timelist d)) t2))))
-                               datalists))
-         )
+  (let ((pos1 (position t1 timelist :test '<))
+        (pos2 (position t2 timelist :from-end t :test '>)))
+    (when (and pos1 pos2)
+      (let ((times (append (list t1) 
+                           (range-filter timelist 
+                                         (list (list pos1 pos2)) 'pass)
+                           (list t2)))
+            (data (mapcar #'(lambda (d) 
+                               (append (list (x-transfer (mat-trans (list timelist d)) t1)) 
+                                       (range-filter d (list (list pos1 pos2)) 'pass)
+                                       (list (x-transfer (mat-trans (list timelist d)) t2))))
+                           datalists)))
+ 
     ;(print (length datalists))
     (cond (
            (= (length datalists) 1)
@@ -66,50 +67,5 @@
           ((= (length datalists) 3) 
            (traject-from-list (first data) (second data) (third data) times '3D-trajectory decimals))
           )
-    ))
+    ))))
 
-; old/original version
-(defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
-  (let* ((pos1 (position t1 timelist :test '<))
-         (pos2 (position t2 timelist :from-end t :test '>))
-         (times (append (list t1) 
-                        (range-filter timelist 
-                                      (list (list pos1 pos2)) 'pass)
-                        (list t2)))
-         (data (mapcar #'(lambda (d) 
-                           (append (list (x-transfer (mat-trans (list timelist d)) t1)) 
-                                   (range-filter d (list (list pos1 pos2)) 'pass)
-                                   (list (x-transfer (mat-trans (list timelist d)) t2))))
-                               datalists))
-         )
-    ;(print (length datalists))
-    (cond (
-           (= (length datalists) 1)
-           (simple-bpf-from-list times (first data) 'bpf decimals))
-          ((= (length datalists) 2)
-           (traject-from-list (first data) (second data) nil times '3D-trajectory decimals))
-          ((= (length datalists) 3) 
-           (traject-from-list (first data) (second data) (third data) times '3D-trajectory decimals))
-          )
-    ))
-
-
-
-#|
-(defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
-  (let* ((pos1 (position t1 timelist :test '<))
-        (pos2 (position t2 timelist :from-end t :test '>))
-        (times (append (list t1) 
-                       (range-filter timelist 
-                                     (list (list pos1 pos2)) 'pass)
-                       (list t2)))
-        (data (mapcar #'(lambda (d) 
-                          (append (list (x-transfer (mat-trans (list timelist d)) t1)) 
-                                  (range-filter d (list (list pos1 pos2)) 'pass)
-                                  (list (x-transfer (mat-trans (list timelist d)) t2))))
-                               datalists))
-        )
-    (traject-from-list (first data) (second data) (third data) times '3D-trajectory decimals)
-    ))
-|#
-                

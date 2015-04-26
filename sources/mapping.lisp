@@ -69,9 +69,11 @@
                    ;(loop for item in (print slots) do
                     ;(print (car slots))
 
-                    ; Try with 'slots' and 'slots2' : one works the other doesn't (symbols are different??)
 
+
+                    ; Try this function "thelooper" with 'slots' and 'slots2' : one works the other doesn't (symbols are different??)
                     (thelooper obj-instance (car slots2) (cadr slots2))
+
 
                     ;)
                     #|
@@ -79,6 +81,9 @@
                             
                             (if (is-om-slot? (type-of obj-instance) (car item))
                     ;          
+
+                                ; HERE ARE SOME ATTEMPTS TO MAKE IT WORK
+
                               ;(set-slot box (car item) (cadr item));;
                                ; (lambda (x) (setf (x box) (cadr item)) (car item))
                               ;(setf (funcall (function theslotname) box) (cadr item))
@@ -100,13 +105,16 @@
                     obj-instance
                     )))
 
-; do-initialize might be a possibility
+
 
 
 #|
+;some tests
+; how can I set the slots of score-objects (chord, chord-seq, voice, etc.) upon instantiation?
+; "do-initialize" might be a possibility
+
 (setf thetestlist '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))
 (setf thetestclass (make-instance 'chord))
-
 (thelooper thetestclass (car thetestlist) (cadr thetestlist))
 |#
 

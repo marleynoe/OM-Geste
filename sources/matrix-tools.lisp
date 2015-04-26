@@ -302,13 +302,14 @@ If <pos> is not specified, the component is added at the end of the array."
                     (apply process (list thearray))
             thearray
             ))
-
+#|
 (defmethod! process-row ((process t) (slotname string) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
                     (apply process (list thearray))
             thearray
             ))
+|#
 
 (defmethod! process-model ((process t) (array class-array))
             :icon '(264)
@@ -377,6 +378,7 @@ If <pos> is not specified, the component is added at the end of the array."
 ; could have a keyword or optional which allows to choose between a single list or a loop with elements
 ; probably make the keyword intead of the rowname for this choice/option
 
+; 'slotname' arg should become 'row'
 (defmethod! process-row ((process t) (slotname string) (array class-array) &optional rowname)
             :icon '(264)
             (let* ((thearray (clone array))

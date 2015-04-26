@@ -144,7 +144,7 @@
 
 (defmethod! rms ((self list) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
             :icon '(631) 
-            :initvals '(nil 0)
+            :initvals '(nil 5)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "size of window in samples" "hopsize" "padding")
             :numouts 1
             :doc "calculates the absolute magnitude of an n-dimensional vector."     

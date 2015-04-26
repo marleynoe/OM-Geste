@@ -79,7 +79,7 @@
                     ("Filters" nil nil (slide-filter sma wma ema smm) nil)
                     ("Statistics" nil nil (rms magnitude variance stdev covariance correlation centroid) nil)
                     ("Utilities" nil nil (integrate differentiate find-peaks) nil)
-                    ("Matrices" nil nil (add-row remove-row get-row get-column get-field) nil)
+                    ("Gesture-Model" nil nil (process-row process-column add-row remove-row get-row get-column get-field) nil)
                     ()
                     )
 )
