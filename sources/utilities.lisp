@@ -45,3 +45,41 @@ Ex. (om-scale '(0 2 5) 0 100)  => (0 40 100)
   (om-scale (om^ (om-scale self 0. 1. minin maxin) exponent) minout maxout 0. 1.)
   )
 
+
+; point-based scrubber - could make a time-based scrubber
+(defmethod! scrubber ((point-pairs list) (segment number) (range number) &optional (mode 'pass))
+            :icon 233
+            :initvals '(nil 1 3 'pass)
+            (let* ((range (list (list segment (+ segment range)))))
+              (range-filter point-pairs range mode)
+              ))
+
+(defmethod! scrubber ((self bpf) (segment number) (range number) &optional mode)
+            (let* ((pointpairs (point-pairs self))
+                   (rangepairs (scrubber pointpairs segment range mode))
+                   (translist (mat-trans rangepairs))
+                   (xpoints (first translist))
+                   (ypoints (second translist)))
+              (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
+              ))
+
+(defmethod! scrubber ((self 3dc) (segment number) (range number) &optional mode)
+            (let* ((pointpairs (point-pairs self))
+                   (rangepairs (scrubber pointpairs segment range mode))
+                   (translist (mat-trans rangepairs))
+                   (xpoints (first translist))
+                   (ypoints (second translist))
+                   (zpoints (third translist)))
+                   (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
+              ))
+
+(defmethod! scrubber ((self 3d-trajectory) (segment number) (range number) &optional mode)
+            (let* ((pointpairs (point-pairs self))
+                   (rangepairs (scrubber pointpairs segment range mode))
+                   (translist (mat-trans rangepairs))
+                   (xpoints (first translist))
+                   (ypoints (second translist))
+                   (zpoints (third translist)))
+                   (traject-from-list  xpoints ypoints zpoints (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
+              )) ; could set the colour etc. here.
+
