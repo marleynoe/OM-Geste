@@ -56,15 +56,6 @@
                    (thenewarray (build-model (flat complist) (times self)))
               thenewarray)))
 
-(defmethod! get-components ((array class-array))
-            :icon '(323)
-            (mapcar (lambda (theindex)
-                      (get-comp array theindex)) (arithm-ser 0 (1- (numcols array)) 1)))
-
-(defmethod! get-components ((array list))
-  (flat (mapcar (lambda (thearrays)
-            (get-components thearrays)) array)))
-
 
 ; slotvals should be called 'data'
 ; **** MATRIX MANIPULATIONS (adding and removing rows and columns) ********
@@ -118,8 +109,100 @@
               themodel)
             )
 
+; add-/remove-column is non-trivial for a time-array - what happens with temporal information of the data being added? offset?
 
-; ***** getting data out of the model *****
+#| 
+; can't get it to output the modified 'newarray'
+(defmethod! add-column ((self gesture-model) (column list) &optional index)
+            :icon '(264)
+            (let* ((newarray (clone self))
+                   (newcomp (new-comp column))
+                   (myarray (add-comp newarray newcomp)))
+            newarray))
+           
+(defmethod! add-column ((self gesture-model) (column list) &optional index)
+            :icon '(264)
+            (print "here")
+            (let* ((arraydata (data self))
+                   (timesdata (times self))
+                   (labeldata
+                    (loop for slot in arraydata
+                          for value in column
+                          for i from 0 to (1- (length arraydata))
+                          collect
+                          (list (index2label self i) (x-append slot value))
+                          ))               
+                   (finaldata (print (flat labeldata 1)))
+              ;(print labeldata)
+              ;(print timesdata)
+              ;(print finaldata)
+                   (newarray (set-array (type-of self) (times self) finaldata)))
+              newarray))
+
+;build-model doesn't work
+(defmethod! add-column ((self gesture-model) (column list) &optional index)
+            (let* ((selfcomps (get-components self))
+                   (newcomp (new-comp column))
+                   (thenewarray (build-model (print (x-append selfcomps newcomp)) (times self))))
+              thenewarray))
+
+(defmethod* add-comp2 ((self class-array) (comp component) &optional position)
+   :initvals '(nil nil)
+   :indoc '("a class-array instance"  "a component instance" "position in the array")
+   :doc "Adds <comp> in <self> at <pos>.
+If <pos> is not specified, the component is added at the end of the array."
+   :icon 323
+   (let* ((newarray (clone self))
+          (pos (or position (numcols newarray))))
+     (setf (comp-array comp) newarray)
+     (setf (index comp) pos)
+     (add-array-col newarray pos (val-list comp))
+     (loop for cmp in (attached-components newarray) do
+           (when (>= (index cmp) pos)
+             (setf (index cmp) (1+ (index cmp)))))
+     (push comp (attached-components newarray))
+     newarray))
+|#
+
+#|
+(defmethod! remove-column ((self class-array) (index integer))
+            :icon '(264)
+            (let* ((array (clone self))
+                   (comp (get-comp array index)))
+              (remove-comp comp)
+              array))
+            
+(defmethod! remove-column ((self gesture-model) (index integer))
+            :icon '(264)
+            (print "here")
+            (let* ((array (clone self))
+                   (comp (get-comp array index)))            
+              (remove-comp comp)
+              ;(setf (times array) (remove (nth index (times array)) (times array)))
+              array))
+
+(let* ((arraydata (data self))
+                   (timesdata (times self))
+                   (labeldata
+                    (loop for slot in arraydata
+                          for i from 0 to (1- (length arraydata))
+                          collect
+                          (unless (string-equal (print (index2label self i)) slotname)
+                            (list (index2label self i) slot)
+                          )))
+                   (finaldata (flat labeldata 1)))
+              ;(print labeldata)
+              ;(print timesdata)
+              ;(print finaldata)
+              (set-array (type-of self) (times self) finaldata)
+              ))
+
+|#
+
+
+;;=====================
+; ACCESS MODEL DATA
+;;=====================
 ; ToDo: catch error when index for row/column is beyond matrix dimensions
 
 (defmethod! get-column ((array class-array) (column number))
@@ -159,6 +242,14 @@
             (get-field array (repeat-n row (length row)) row)
             )
 
+(defmethod! get-components ((array class-array))
+            :icon 322
+            (mapcar (lambda (theindex)
+                      (get-comp array theindex)) (arithm-ser 0 (1- (numcols array)) 1)))
+
+(defmethod! get-components ((array list))
+  (flat (mapcar (lambda (thearrays)
+            (get-components thearrays)) array)))
 
 #|
 (defmethod! set-array-slot ((self class-array) (slotname t) (slotvals t))
@@ -179,26 +270,8 @@
               ))
 |#
 
-(defmethod! set-array-slot ((array class-array) (slotname string) (slotvals t))
-            :icon '(264)
-            (let ((newarray array))
-           ; (setf ((label2index newarray slotname) newarray) slotvals)
-            ;  (label2index newarray slotname)
-              ;(setf (#'slotname newarray) slotvals)
-              (setf #'(lambda (theslotname)
-                      (theslotname newarray) slotname) slotvals)
-            (set-data newarray)
-            newarray         
-            ))
 
-
-
-(defun set-array (type numcols params)
-  (let ((array (cons-array (make-instance type) (list nil numcols 0 nil) params)))
-    (set-data array)
-    array)
-  )
-
+;;; no set-array function here
 
 
 (defmethod! process-array ((process t) (array class-array))
@@ -222,30 +295,27 @@
 |#
 
 ; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. If nil returns all rows one by one
-; or the name of the row (slot) is provided, too, so it can be chosen inside the function
-; 
 
 (defmethod! process-rows ((process t) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
-                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+                    (apply process (list thearray))
             thearray
             ))
 
 (defmethod! process-row ((process t) (slotname string) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
-                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+                    (apply process (list thearray))
             thearray
             ))
 
 (defmethod! process-model ((process t) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
-                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+                    (apply process (list thearray))
             thearray
             ))
-
 
 
 (defmethod! process-columns ((process t) (array class-array))
@@ -298,6 +368,100 @@
             thearray
             ))
 
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; NEW
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+; here the slot is provided as a list of values which is to be processed by 'process row'
+; could have a keyword or optional which allows to choose between a single list or a loop with elements
+; probably make the keyword intead of the rowname for this choice/option
+
+(defmethod! process-row ((process t) (slotname string) (array class-array) &optional rowname)
+            :icon '(264)
+            (let* ((thearray (clone array))
+                   ;later I should use symbol-function...
+                  ;(theslotvalues (symbol-function slotname)) 
+                  (theslotvalues (array-field array slotname))
+                  (thenewvalues (funcall process theslotvalues)))
+              (if rowname
+                  (setf thearray (add-row thearray rowname thenewvalues))             
+                (array-field thearray slotname thenewvalues))
+            thearray
+            ))
+
+#|
+(defmethod! process-row ((process list) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+                   (loop for proc in process
+                         for slot in slotname do
+                         (let* ((theslotvalues (array-field array slot))
+                                (thenewvalues (funcall proc theslotvalues)))
+                           (array-field thearray slot thenewvalues)
+                           ))
+                   thearray
+                   ))
+|#
+; ok here's a problem with the optional 'rowname' if provided to lambda doesn't work when rowname is nil
+(defmethod! process-row ((process list) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+              (mapc (lambda (proc slot) (setf thearray (process-row proc slot thearray rowname))) process slotname)
+              thearray)
+            )
+
+(defmethod! process-row ((process list) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+              (mapc (lambda (proc slot row) (setf thearray (process-row proc slot thearray row))) process slotname (print rowname))
+              thearray)
+            )
+
+; can probably also be done via mapc 
+(defmethod! process-row ((process t) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+                   (loop for slot in slotname do
+                         (let* ((theslotvalues (array-field array slot))
+                                (thenewvalues (funcall proc theslotvalues)))
+                           (array-field thearray slot thenewvalues)
+                           ))
+                   thearray
+                   ))
+
+; this iterates through the list and calls 'process' once per item
+(defmethod! process-row-by-field ((process t) (slotname string) (array class-array))
+            :icon '(264)
+            (let* ((thearray (clone array))
+                  ;later maybe use symbol-function... 
+                  ;(theslotvalues ((symbol-function slotname) array)) 
+                  (theslotvalues (array-field array slotname))
+                  (thenewvalues 
+                   (loop for value in theslotvalues collect 
+                         (funcall process value))))
+              (array-field thearray slotname thenewvalues)
+              thearray
+              ))
+
+;%%%%%%%%%%%% PROCESS COLUMN %%%%%%%%%%%%%%%%
+
+; still need the case that if 'index' is nil it iterates through all of them
+; this could again do an iteration through the list or provide the entire list
+; -> don't know if it would be useful to 'make' another component (-> what about the temporality of this)
+
+
+(defmethod! process-column ((process t) (index integer) (array class-array))
+            :icon '(264)
+            (let* ((thearray (clone array))
+                   ;(complist (loop for i from 0 to (1- (numcols thearray))
+                   ;                collect (get-comp thearray i))))
+                   (comp (get-comp thearray index))
+                   (complist (comp-list comp)))              
+              (comp-list comp (mapcar (lambda (c) (apply process (list c))) complist))
+              thearray
+              ))
+
+(defmethod! comp-quantize ((self component) (interval list))
+            :icon 02
+            (comp-list self (quantize (comp-list self) interval))
+            )
 
 ;%%%%%%%%%%%%%% USER FUNS %%%%%%%%%%%%%%%%%%%%%%
 
@@ -447,6 +611,7 @@
 
 ;Need a Smoothing+Downsample! ->this can be constructed
 ;Maybe the 'stream-resample' should be simply a 'resample' that works on slots or components..
+;this can be done via an om-sample applied to the process-row or process-column methods
 
 (defmethod! stream-resample ((self class-array) (slotname string) (downsampling number))
             :icon 04
@@ -587,7 +752,6 @@
 
 ; %%%% slot-methods %%%%%%%%                                
 
-
 ; if I add a method for bpfs, etc. to om-scale-exp it should work on components or rows depending on the processing function
 
 (defmethod! slot-scale ((thedata list) &key minval maxval exp)
@@ -623,8 +787,29 @@
               ))
 
 
+;=====================
+; HELPER FUNCTIONS
+;=====================
 
-;;; HELPER FUNCTIONS ______________________
+(defmethod! set-array-slot ((array class-array) (slotname string) (slotvals t))
+            :icon '(264)
+            (let ((newarray array))
+           ; (setf ((label2index newarray slotname) newarray) slotvals)
+            ;  (label2index newarray slotname)
+              ;(setf (#'slotname newarray) slotvals)
+              (setf #'(lambda (theslotname)
+                      (theslotname newarray) slotname) slotvals)
+            (set-data newarray)
+            newarray         
+            ))
+
+
+(defun set-array (type numcols params)
+  (let ((array (cons-array (make-instance type) (list nil numcols 0 nil) params)))
+    (set-data array)
+    array)
+  )
+
 
 ; I can use 'index' on the component here to save some ressources
 

@@ -1,12 +1,13 @@
 
-
+(in-package :om)
  
+; this function adds an extra component
 (defmethod segment-gstr ((self gesture-array) times)
   (let ((descriptors (loop for str in (streams self) collect (second (sdif-info str))))
-        (segment-data (loop for segment on times
+        (segment-data (print (loop for segment on times
                              while (cdr segment) collect
-                             (let ((t1 (car segment))
-                                   (t2 (cadr segment)))
+                             (let ((t1 (print (car segment)))
+                                   (t2 (print (cadr segment))))
                                (loop for str in (streams self) append
                                      (loop for substr in (substreams str) 
                                            collect (make-segmented-object 
@@ -14,7 +15,7 @@
                                                     (mapcar #'(lambda (x) (coerce x 'single-float)) (timelist str))
                                                     t1 t2)
                                            ))
-                               ))))
+                               )))))
     
     (let ((timearray 
            (cons-array (make-instance 'time-array :times times) 
@@ -24,11 +25,13 @@
                              append (list (internk (nth j descriptors)) row)))))
       
       (set-data timearray)
+      ; this function adds an extra component - need to remove it here again
+      ;(remove-comp (car (last-n (get-components timearray) 2)))
       timearray
       )))
 
 
-; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio!
+; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio! and score objects.
 ; Need to find a way to make temporal selections (extraction from the gesture model)
 ; a) means to re-segment the model and extract a component
 ; b) could have a function that merges the data together and then segments it and returns the object, for example. (A bit like the gesture-array - time range) 

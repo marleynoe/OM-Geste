@@ -80,7 +80,7 @@
               (print timesdata)
               (set-array (type-of self) (times self) finaldata)
               ))
-
+;;;;;
 (defmethod! get-field ((array class-array) (column number) (row number))
             :icon '(323)
             (comp-field (get-comp array column) row)
@@ -162,8 +162,8 @@
             ))
 |#
 
-; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. If nil returns all rows one by one
-; or the name of the row (slot) is provided, too, so it can be chosen inside the function
+; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. 
+; If nil returns all rows one by one
 ; 
 
 (defmethod! process-rows ((process t) (array class-array))
@@ -239,6 +239,101 @@
             thearray
             ))
 
+
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; NEW
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+; here the slot is provided as a list of values which is to be processed by 'process row'
+; could have a keyword or optional which allows to choose between a single list or a loop with elements
+; probably make the keyword intead of the rowname for this choice/option
+
+(defmethod! process-row ((process t) (slotname string) (array class-array) &optional rowname)
+            :icon '(264)
+            (let* ((thearray (clone array))
+                   ;later I should use symbol-function...
+                  ;(theslotvalues (symbol-function slotname)) 
+                  (theslotvalues (array-field array slotname))
+                  (thenewvalues (funcall process theslotvalues)))
+              (if rowname
+                  (setf thearray (add-row thearray rowname thenewvalues))             
+                (array-field thearray slotname thenewvalues))
+            thearray
+            ))
+
+#|
+(defmethod! process-row ((process list) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+                   (loop for proc in process
+                         for slot in slotname do
+                         (let* ((theslotvalues (array-field array slot))
+                                (thenewvalues (funcall proc theslotvalues)))
+                           (array-field thearray slot thenewvalues)
+                           ))
+                   thearray
+                   ))
+|#
+; ok here's a problem with the optional 'rowname' if provided to lambda doesn't work when rowname is nil
+(defmethod! process-row ((process list) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+              (mapc (lambda (proc slot) (setf thearray (process-row proc slot thearray rowname))) process slotname)
+              thearray)
+            )
+
+(defmethod! process-row ((process list) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+              (mapc (lambda (proc slot row) (setf thearray (process-row proc slot thearray row))) process slotname (print rowname))
+              thearray)
+            )
+
+; can probably also be done via mapc 
+(defmethod! process-row ((process t) (slotname list) (array class-array) &optional rowname)
+            (let ((thearray (clone array)))
+                   (loop for slot in slotname do
+                         (let* ((theslotvalues (array-field array slot))
+                                (thenewvalues (funcall proc theslotvalues)))
+                           (array-field thearray slot thenewvalues)
+                           ))
+                   thearray
+                   ))
+
+; this iterates through the list and calls 'process' once per item
+(defmethod! process-row-by-field ((process t) (slotname string) (array class-array))
+            :icon '(264)
+            (let* ((thearray (clone array))
+                  ;later maybe use symbol-function... 
+                  ;(theslotvalues ((symbol-function slotname) array)) 
+                  (theslotvalues (array-field array slotname))
+                  (thenewvalues 
+                   (loop for value in theslotvalues collect 
+                         (funcall process value))))
+              (array-field thearray slotname thenewvalues)
+              thearray
+              ))
+
+
+;%%%%%%%%%%%% PROCESS COLUMN %%%%%%%%%%%%%%%%
+
+; still need the case that if 'index' is nil it iterates through all of them
+; this could again do an iteration through the list or provide the entire list
+; -> don't know if it would be useful to 'make' another component (-> what about the temporality of this)
+
+(defmethod! process-column ((process t) (index integer) (array class-array))
+            :icon '(264)
+            (let* ((thearray (clone array))
+                   ;(complist (loop for i from 0 to (1- (numcols thearray))
+                   ;                collect (get-comp thearray i))))
+                   (comp (get-comp thearray index))
+                   (complist (comp-list comp)))              
+              (comp-list comp (mapcar (lambda (c) (apply process (list c))) complist))
+              thearray
+              ))
+
+(defmethod! comp-quantize ((self component) (interval list))
+            :icon 02
+            (comp-list self (quantize (comp-list self) interval))
+            )
 
 ;%%%%%%%%%%%%%% USER FUNS %%%%%%%%%%%%%%%%%%%%%%
 
@@ -532,11 +627,7 @@
             :icon 04
             (convert-paths thedata discard-levels new-dir keep-levels)
             )
-
-
-
-     
-                                
+                  
 
 (defmethod! slot-scale ((thedata list) &key minval maxval exp)
             :icon 04
@@ -580,10 +671,10 @@
             :icon '(323)
             :initvals '(nil nil nil)
             :outdoc '("the slotvalues")
-            (if  newvalues 
-                (let ((newvalues (list! newvalues))
+            (if newvalues 
+                (let* ((newvalues (list! newvalues))
                       (indices (arithm-ser 0 (length newvalues) 1)))
-                  (print newvalues)
+                  ;(print newvalues)
                   (mapcar (lambda (thevalue theindex)
                             (comp-field (get-comp self theindex) slotname thevalue)) 
                           newvalues indices))
@@ -594,7 +685,6 @@
             (flat (mapcar (lambda (theslotname thenewvalues)
                       (array-field self theslotname thenewvalues)) slotname newvalues)
             ))
-
 
 (defmethod! get-comp-vals ((self component) (thefunction t) &rest slotnames)
             :icon '(323)
