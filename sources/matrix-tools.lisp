@@ -69,6 +69,9 @@
                           collect
                           (list (index2label self i) slot)
                           ))
+                   ; could have a check here for audio, scores, etc. that will segment them, but it should be better if the gesture-model does that.
+                   ;(checked-data
+                   ;
                    (newdata (print (list slotname (list slotvals))))
                    (finaldata (print (if (integerp index)
                                   (flat (interlock labeldata (list newdata) (list! index)) 1)
@@ -80,8 +83,11 @@
               ))
 
 (defmethod! add-row ((self class-array) (slotname list) (slotvals list) &optional index)
+            (print "it's me")
             (let ((themodel self))
-              (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val i))) slotname slotvals index)
+              (if (car (list! index))
+                  (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val i))) slotname slotvals index)
+                (mapc (lambda (slot val) (setf themodel (add-row themodel slot vmal))) slotname slotvals))
               themodel)
             )
 

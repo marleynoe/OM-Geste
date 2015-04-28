@@ -5,6 +5,7 @@
 ;dot.jab is interesting! 
 ;dot.region can also be interesting!
 
+; for now list method works only on scalars, not on vectors
 (defmethod! differentiate ((self list) (order integer))
             :icon '(631) 
             :initvals '(nil 1)
@@ -12,10 +13,12 @@
             :numouts 1
             :doc "Calculates the nth-order finite difference."           
             (let ((thelist self))
-              (loop for i from 1 to order do
-                    (let ((diff (x->dx thelist)))
-                      (setf thelist (x-append (car diff) diff))
-                      ))
+              (if (numberp (car self))
+                  (loop for i from 1 to order do
+                        (let ((diff (x->dx thelist)))
+                          (setf thelist (x-append (car diff) diff))
+                          ))
+                (setf thelist (mapcar (lambda (x) (differentiate x order)) thelist)))
               thelist))
 
 (defmethod! differentiate ((self bpf) (order integer))
@@ -71,28 +74,23 @@
               
 
 ; ******* INTEGRATION *********
-;doesn't this need an optional 'start' value?
-(defmethod! integrate ((self list) (order integer))
+;this needs an optional start-value - if nil use (car thelist)
+(defmethod! integrate ((self list) (order integer) &optional startval)
             :icon '(631) 
             :initvals '(nil 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of integration")
             :numouts 1
             :doc "Integrates values in <self>"    
             (let ((thelist self))
-              (loop for i from 1 to order do
-                    (let ((diff (dx->x (car thelist) thelist)))
-                      (setf thelist diff)
-                      ))
+              (if (numberp (car self))
+                  (loop for i from 1 to order do
+                        (let ((diff (dx->x (or startval (car thelist)) thelist)))
+                          (setf thelist diff)
+                          ))
+                (setf thelist (mapcar (lambda (x) (integrate x order startval)) thelist)))
               thelist))
 
-(defmethod! integrate ((self list) (order integer))
-            (let ((thelist (cdr self)))
-              (loop for i from 1 to order do                 
-                      (setf thelist (dx->x 0 thelist))
-                      )
-              thelist))
-
-(defmethod! integrate ((self bpf) (order integer))
+(defmethod! integrate ((self bpf) (order integer) &optional startval)
             (let ((thelist (cdr (y-points self)))) ; ???
               (loop for i from 1 to order do                 
                       (setf thelist (dx->x 0 thelist))
@@ -100,7 +98,7 @@
               (simple-bpf-from-list (x-points self) thelist 'bpf (decimals self))
               ))
 
-(defmethod! integrate ((self bpc) (order integer))
+(defmethod! integrate ((self bpc) (order integer) &optional startval)
             (let ((xlist (cdr (x-points self)))
                   (ylist (cdr (y-points self)))) ; ???
               (loop for i from 1 to order do                 
@@ -110,7 +108,7 @@
               (simple-bpf-from-list xlist ylist 'bpc (decimals self))
               ))
 
-(defmethod! integrate ((self 3dc) (order integer))
+(defmethod! integrate ((self 3dc) (order integer) &optional startval)
             (let ((xlist (cdr (x-points self)))
                   (ylist (cdr (y-points self)))
                   (zlist (cdr (z-points self))))
@@ -122,7 +120,7 @@
               (3dc-from-list xlist ylist zlist '3dc (decimals self))
               ))
 
-(defmethod! integrate ((self 3d-trajectory) (order integer))
+(defmethod! integrate ((self 3d-trajectory) (order integer) &optional startval)
             (let ((xlist (cdr (x-points self)))
                   (ylist (cdr (y-points self)))
                   (zlist (cdr (z-points self))))
@@ -149,27 +147,31 @@
             :numouts 1
             :doc "calculates the absolute magnitude of an n-dimensional vector."     
             (let ((thelist self))
-              (if (numberp windowsize)
-                  (let ;((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist))) ; padding - only if I need the same number of values
-                      ((windowedlist (x-append (car thelist) thelist)))
-                    (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
-                                        (rootmeansquare (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize))))
-                    thelist)
-                (rootmeansquare thelist)
-                )))
+              (if (numberp (car thelist))
+                  (if (numberp windowsize)
+                      (let ;((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist))) ; padding - only if I need the same number of values
+                          ((windowedlist (x-append (car thelist) thelist)))
+                        (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
+                                            (rootmeansquare (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize))))
+                        thelist)
+                    (rootmeansquare thelist))
+                (mapcar (lambda (x) (rms x windowsize hopsize padding)) thelist))
+                    ))
 
 (defmethod! rms ((self bpf) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
             (let* ((thexpoints (if (= hopsize 1) (x-points self) '(1)))
                    (thelist (y-points self))
                    (therootmeansquarelist (if (numberp windowsize)
-                                    (let ;((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist))) ; padding - only if I need the same number of values
-                                        ((windowedlist (x-append (car thelist) thelist)))
-                                      (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
-                                                          (rootmeansquare (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize))))
-                                      thelist)
-                                 (rootmeansquare thelist))
-                               ))
-              (simple-bpf-from-list thexpoints therootmeansquarelist 'bpf (decimals self))
+                                              (let ;((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist))) ; padding - only if I need the same number of values
+                                                  ((windowedlist (x-append (car thelist) thelist)))
+                                                (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
+                                                                    (rootmeansquare (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize))))
+                                                thelist)
+                                            (rootmeansquare thelist))
+                                          ))
+              (if (numberp windowsize)
+                  (simple-bpf-from-list thexpoints therootmeansquarelist 'bpf (decimals self))
+                therootmeansquarelist)
               ))
 
 
@@ -199,8 +201,10 @@
             :initvals '(nil 0)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "defines the origin (default: 0)")
             :numouts 1
-            :doc "calculates the absolute magnitude of an n-dimensional vector."           
-            (euclidean-distance self offset)
+            :doc "calculates the absolute magnitude of an n-dimensional vector."
+            (if (numberp (car (list! (car self)))) 
+                (euclidean-distance self offset)
+              (mapcar (lambda (x) (magnitude x offset)) self))
             )
 
 (defmethod! magnitude ((self bpf) &optional (offset 0))              
@@ -234,7 +238,7 @@
 ; Need to make the average / arithmetic mean (SimpleArithmeticMean) for vectors.
 ; a defmethod! for lists-of-lists (each sublist being a vector)
 
-(defun themean (list)
+(defun mean (list)
   (/ (om-sum list) (length list))
   )
 
@@ -262,21 +266,25 @@
             :numouts 1
             :doc "calculates the standard deviation or sample standard deviation."
             (let ((thelist self))
-              (if (numberp windowsize)
-                  (let ((windowedlist (x-append (car thelist) thelist)))
-                    (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
-                                        (let ((thewindow (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize)))                     
-                                          (standev thewindow bessel)
-                                          ))))
-                (setf thelist (standev thelist bessel))
-                )
-              thelist)
+              (if (numberp (car thelist))
+                  (if (numberp windowsize)
+                      (let ((windowedlist (x-append (car thelist) thelist)))
+                        (setf thelist (loop for window in thelist while (> (length windowedlist) hopsize) collect
+                                            (let ((thewindow (first-n (setf windowedlist (last-n windowedlist (- (length windowedlist) hopsize))) windowsize)))                     
+                                              (standev thewindow bessel)
+                                              ))))
+                    (setf thelist (standev thelist bessel))
+                    )
+                (setf thelist (mapcar (lambda (vals) (stdev vals bessel windowsize hopsize)) thelist)))
+                thelist)
             )
 
 (defmethod! stdev ((self bpf) &optional (bessel nil) (windowsize nil) (hopsize 1))
             (let ((xpoints (if (= hopsize 1) (x-points self) '(1)))
                   (ypoints (stdev (y-points self) bessel windowsize hopsize)))
-              (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
+              (if windowsize
+                  (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
+                ypoints)
               ))
 
 (defmethod! stdev ((self 3dc) &optional (bessel nil) (windowsize nil) (hopsize 1))
@@ -291,13 +299,17 @@
             (om-sum (om* firstlist secondlist))
             )
 
-; this is probably not correct.
+
+
+
+;; **** NOT IMPLEMENTED YET *****
+;; Covariance and Correlation
 
 #|
 (defmethod! covariance ((self list))
   (sqrt (/ (om-sum^2 self) (length self)))
   )
-|#
+
 
 ; it's the mean of the product of the two vectors and subtracting from this the product of the means
 (defmethod! covariance ((variable1 list) (variable2 list) (windowsize number)) ;if nothing provided for 'windowsize' take the entire list
@@ -321,7 +333,7 @@
               )
             )
 
-#|
+
 (defmethod! covariance ((variable1 list) (variable2 list) (windowsize number)) ;if nothing provided for 'windowsize' take the entire list
             (let ((windowedlist1 (print (x-append (repeat-n (car variable1) windowsize) variable1)))
                   (windowedlist2 (print (x-append (repeat-n (car variable2) windowsize) variable2))))    
@@ -334,9 +346,10 @@
   ))
 |#
 
-; correlation
-
+; ***** Correlation ****
 ; It is obtained by dividing the covariance of the two variables by the product of their standard deviations
+
+#|
 
 ;no windowing  
 (defmethod! correlation ((variable1 list) (variable2 list) (windowsize number))
@@ -358,6 +371,8 @@
               (om/ thecovariance thestdev)
               )
             )
+
+|#
 
 (defmethod! centroid ((tuples list))
             (let* ((translist (mat-trans tuples))
@@ -383,62 +398,61 @@
             :initvals '(((0 1) (5 10) (10 1)) peak nil > 10) ; no quote needed because it is already quoted
             :menuins '((1 (("peak" 'peak) ("trough" 'trough))) (3 ((">" >) ("<" <))))
             :doc "finds the n highest/lowest peaks or troughs in a bpf or point-list"
-            (let* ((transpoints (mat-trans self))
-                   (thederivativepoints (list (first transpoints) (differentiate (second transpoints) 1)))
-
-                   (zerox (remove-duplicates (y-transfer (mat-trans thederivativepoints) 0.0 decimals))) ; give a list of "X" for zero crosses
-                   ;(thecrossingfrequencies (x-transfer thedxpoints (om- thezerocrossings deltaparam) decimals))
-                   (secondderivative (list (first transpoints) (differentiate (second thederivativepoints) 1)))
-                   (signs (x-transfer (mat-trans secondderivative) zerox))
-                   (peakpos nil)
-                   (troughpos nil))
+            (if (listp (car self))
+                (let* ((transpoints (mat-trans self))
+                       (thederivativepoints (list (first transpoints) (differentiate (second transpoints) 1)))
+                       (zerox (remove-duplicates (y-transfer (mat-trans thederivativepoints) 0.0 decimals))) 
+                       (secondderivative (list (first transpoints) (differentiate (second thederivativepoints) 1)))
+                       (signs (x-transfer (mat-trans secondderivative) zerox))
+                       (peakpos nil)
+                       (troughpos nil))
               ;find maxima and minima and write into peakpos and throughpos
-              (loop for item in signs for x from 0 to (length signs) do ; also, this structure? for j = 0 then (+ j 1)
-                    (unless (= item 0)
-                      (if (< item 0) 
-                          (push x peakpos)   ;probably better use append instead of push
-                        (push x troughpos)))
-                    finally (progn
-                              (setf peakpos (reverse peakpos))
-                              (setf troughpos (reverse troughpos))))
+                  (loop for item in signs for x from 0 to (length signs) do ; also, this structure? for j = 0 then (+ j 1)
+                        (unless (= item 0)
+                          (if (< item 0) 
+                              (push x peakpos)   ;probably better use append instead of push
+                            (push x troughpos)))
+                        finally (progn
+                                  (setf peakpos (reverse peakpos))
+                                  (setf troughpos (reverse troughpos))))
               ;look up x-values for peakpos and throughpos and write into x-peaks and x-troughs, respectively
-              (let* ((x-peaks (posn-match zerox peakpos))
-                     (x-troughs (posn-match zerox troughpos))
-                     (peakpoints (mat-trans (list x-peaks (x-transfer self x-peaks))))
-                     (troughpoints (mat-trans (list x-troughs (x-transfer self x-troughs))))
-                     )
-                (if numpeaks
-                    (let* ((peaksandtroughs (sort-list (x-append peakpoints troughpoints) :test '< :key 'first))
-                           (euc-distance (om^ (euclidean-distance (x-append (list (car peaksandtroughs)) peaksandtroughs) peaksandtroughs) 2)) ;maybe squared?
-                           (summed-distances (loop for 1st in euc-distance
-                                                   for 2nd in (cdr (x-append euc-distance (car (last euc-distance)))) collect
-                                                   (+ 1st 2nd)))
-                           (dummy (print (list (length peaksandtroughs) (length summed-distances) (length zerox))))
-                           (points-and-distance (loop for pat in peaksandtroughs 
-                                                      for sdt in summed-distances collect
-                                                      (x-append sdt pat)
-                                                      )))
-                           (if (equal mode 'peak)
-                               (let* ((thepeaks (sort-list (posn-match points-and-distance peakpos) :test test :key 'first)) ; change 'test'
-                                      (cleanpeaks (loop for point in thepeaks collect
+                  (let* ((x-peaks (posn-match zerox peakpos))
+                         (x-troughs (posn-match zerox troughpos))
+                         (peakpoints (mat-trans (list x-peaks (x-transfer self x-peaks))))
+                         (troughpoints (mat-trans (list x-troughs (x-transfer self x-troughs))))
+                         )
+                    (if numpeaks
+                        (let* ((peaksandtroughs (sort-list (x-append peakpoints troughpoints) :test '< :key 'first))
+                               (euc-distance (om^ (euclidean-distance (x-append (list (car peaksandtroughs)) peaksandtroughs) peaksandtroughs) 2)) ;squared distance
+                               (summed-distances (loop for 1st in euc-distance
+                                                       for 2nd in (cdr (x-append euc-distance (car (last euc-distance)))) collect
+                                                       (+ 1st 2nd)))
+                               (dummy (print (list (length peaksandtroughs) (length summed-distances) (length zerox))))
+                               (points-and-distance (loop for pat in peaksandtroughs 
+                                                          for sdt in summed-distances collect
+                                                          (x-append sdt pat)
+                                                          )))
+                          (if (equal mode 'peak)
+                              (let* ((thepeaks (sort-list (posn-match points-and-distance peakpos) :test test :key 'first)) ; change 'test'
+                                     (cleanpeaks (loop for point in thepeaks collect
                                                        (last-n point 2)
                                                        )))
-                                 (first-n cleanpeaks numpeaks))
+                                (first-n cleanpeaks numpeaks))
                                  ;cleanpeaks)
-
-                             (let* ((thetroughs (sort-list (posn-match points-and-distance troughpos) :test test :key 'first))
-                                    (cleantroughs (loop for point in thetroughs collect
-                                                        (last-n point 2)
-                                                        )))
-                               (first-n cleantroughs numpeaks)))
-                           )
-                  (if (equal mode 'peak)
-                  peakpoints
-                troughpoints)
-                  ))))
+                            
+                            (let* ((thetroughs (sort-list (posn-match points-and-distance troughpos) :test test :key 'first))
+                                   (cleantroughs (loop for point in thetroughs collect
+                                                       (last-n point 2)
+                                                       )))
+                              (first-n cleantroughs numpeaks)))
+                          )
+                      (if (equal mode 'peak)
+                          peakpoints
+                        troughpoints))))
+              (mapcar (lambda (x) (find-peaks x mode :numpeaks numpeaks :test test :decimals decimals)) self))
+            )
               
 
-; peaks and troughs should always switch otherwise it's a mistake! 
               
 (defmethod! find-peaks ((self bpf) (mode t) &key (numpeaks nil) (test '>) (decimals 10))
             (let ((point-list (mat-trans (find-peaks (point-pairs self) mode :numpeaks numpeaks :test test :decimals decimals))))

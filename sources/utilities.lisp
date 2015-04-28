@@ -47,6 +47,7 @@ Ex. (om-scale '(0 2 5) 0 100)  => (0 40 100)
 
 
 ; point-based scrubber - could make a time-based scrubber
+; point-scrubber vs time-scrubber (latter could be an interpolated value or a selection on time values in ms)
 (defmethod! scrubber ((point-pairs list) (segment number) (range number) &optional (mode 'pass))
             :icon 233
             :initvals '(nil 1 3 'pass)

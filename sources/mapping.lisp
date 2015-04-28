@@ -25,8 +25,8 @@
 
 
 ; To do: 1) needs to work with other classes (not only temporalboxes), 2) need a map-column, map-row? function (where the lambda patch can see the entire picture)
-; if I want to have dynamic mappins I need to be able to see the entire model or at least slot. 
-
+; if I want to have dynamic mappins I need to be able to see the entire model or at least slot. -> not if this is already introduced in the model
+; should have also the inputs named
 
 (defmethod! map-gesture ((self gesture-model) mapping-fun object)
             :icon 02        
@@ -36,6 +36,7 @@
                          ;(print (slot-definition-name (class-slots (class-of box))))
                          (thecontrols (lcontrols self))
                          (vals 
+                          ; need to print this to see if I can do the same trick with the inputs 'omin
                           (multiple-value-list 
                            (funcall (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
 
@@ -125,9 +126,18 @@
         )
   class)
 
-
+#|
 (defun set-class-slot (class slot value)
   (funcall (fdefinition `(setf ,slot)) value class))
+
+(defun set-class-slot (object slot value)
+  (funcall (fdefinition `(setf ,slot ,object)) value)
+  )
+|#
+
+(defun set-class-slot (object slot value)
+  (eval `(setf (,slot ,object) value))
+  )
 
 
 
