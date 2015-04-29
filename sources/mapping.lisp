@@ -35,79 +35,140 @@
                   (let* ((obj-instance (make-instance (type-of object)))
                          ;(print (slot-definition-name (class-slots (class-of box))))
                          (thecontrols (lcontrols self))
-                         (vals 
-                          ; need to print this to see if I can do the same trick with the inputs 'omin
+                         (vals                      
                           (multiple-value-list 
                            (funcall (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
-
+                                    
                                     (loop for slot in thecontrols collect
                                           (list (string (first slot)) (nth col (second slot)))))))
-                                                
+                         
+                         ;(input-names (print (mapcar #'(lambda (out) 
+                         ;                   (intern (frame-name out) :om))
+                         ;               (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
+                         ;(names (mapcar #'(lambda (out) 
+                         ;                   (frame-name out))
+                         ;               (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
+                         
                          (names (mapcar #'(lambda (out) 
-                                            (intern (frame-name out)))
+                                            (intern (string-upcase (frame-name out)) :om))
                                         (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
                         ; (names (mapcar #'(lambda (out) 
                          ;                   (intern (frame-name out) :om))
                           ;              (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
-                         
-                         ;(slots (print (mat-trans (list names vals)))))
-
-
-
-                         (slots2 (print (list names vals)))                        
-                         (slots (print '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))))
-                    
+                         (slots (list names vals))
+                         (transslots (mat-trans (list names vals))))
                     
 
+                        ; (slots2 (print (list names vals)))                        
+                        ; (slots (print '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))))
+                    
                     ;(print (type-of (caar slots2)))
-                    ;(print (type-of (caar slots)))
-                           
+                    ;(print (type-of (caar slots)))                       
 
                     ; for now make it work with chords / notes
-                  ;  (if (subtypep (type-of object) class-array)
-                  ;      (set-array (type-of object) 1 (flat slots))
+                  #|       
+                    (if (subtypep (type-of object) 'class-array)
+                        ;(let ((prep-slots (values (flat (loop for item in slots collect
+                        ;                        (x-append (print (intern (string-upcase (car item)) :keyword)
+                        ;                                         (cdr item))))))))
+                       ; (let ((testlist (cons :numcols 15 :e-dels '(1 2 3 4 5))))
+
+                        ; it can be solved by sorting out from lists etc. - but it would be better to find a solution for make-instance.
+
+                        (let ((filteredslots (loop for item in transslots unless (string-equal (string-upcase (print (car item))) "numcols") collect 
+                                                   item))
+                              (numcols (loop for item in transslots when (string-equal (string-upcase (print (car item))) "numcols") collect 
+                                                   item)));
+
+                                                   ;this should be done by appending into a variable
+
+                                                   ;(table-filter  #'(lambda (x) (eql (string-upcase x) 'numcols)) (print item) 0 'reject))))
+                          (print filteredslots)
+                          (print residue)
+                          ))
+|#
+
+                    (let* ((actiontimes nil)
+                           (numcols nil)
+                           (filteredslots nil))
+                      (loop for item in transslots do
+                            (cond ((string-equal  (car item) "numcols") (setf numcols (append numcols item)))
+                                  ((string-equal  (car item) "action-time") (setf actiontimes (append actiontimes item)))
+                                  (t (setf filteredslots (append filteredslots item)))
+                                  ))
+                      ;(print actiontimes)
+                      ;(print numcols)
+                      ;(print filteredslots)
+
+                    (if (subtypep (type-of object) 'class-array)
+                        (set-array-2 (type-of object) (second numcols) (second actiontimes) filteredslots)
+                      (thelooper obj-instance (car slots) (cadr slots))
+                      )))))
+
+
+
+
+
+
+                       ; (set-array2 (type-of object) 10 0 (print (flat transslots 1))))
+                       ;   (make-instance (type-of object) (print testlist))
+                       ; ))
+                        ;(cons-array (first slots) (second slots))
+                      ;)
+
+                        ;(let ((thearray (make-instance (type-of object) (intern (string-upcase "numcols") :keyword) 15)))
+                          ;(setf (slot-value thearray 'numcols) 15)
+                         ; thearray
+                          ;))
+
+                   ; (if (subtypep (type-of object) 'class-array)
+                   ;     (let ((theinstance (make-instance (type-of object))))
+                    ;      (loop for item in (flat slots
+                        ;(set-array (type-of object) 10 (flat slots))(eql 'this 'this)
+
+
+                   ;     (make-instance (type-of object) (flat slots))
+                   ;   )
                   ;    (
                    ;(loop for item in (print slots) do
                     ;(print (car slots))
 
-
-
                     ; Try this function "thelooper" with 'slots' and 'slots2' : one works the other doesn't (symbols are different??)
-                    (thelooper obj-instance (car slots2) (cadr slots2))
-
-
-                    ;)
+                    ; (thelooper obj-instance (car slots2) (cadr slots2))
+                    
                     #|
                     (loop for item in (print slots) do                       
-                            
-                            (if (is-om-slot? (type-of obj-instance) (car item))
-                    ;          
-
-                                ; HERE ARE SOME ATTEMPTS TO MAKE IT WORK
-
-                              ;(set-slot box (car item) (cadr item));;
-                               ; (lambda (x) (setf (x box) (cadr item)) (car item))
-                              ;(setf (funcall (function theslotname) box) (cadr item))
-                              ;(setf (slot-value box (car item)) (cadr item))
-                              ;(setf ((symbol-function theslotname) box) (cadr item))
-                                ;(progn (print theslotname)
-                                ;  (setf ((string theslotname) box) (cadr item)))
-                              ;(funcall (function setf) theslotname box (card item))
-                              ;(setf (theslotname box) (cadr item))
-
-                                (set-class-slot (print obj-instance) (print (car item)) (print (cadr item)))
-
-                              ;(setf (funcall (symbol-function theslotname) box) (cadr item));; --> this doesn't work
-                                ;(print (get-all-slots-of-class (type-of box)))
+                          
+                          (if (is-om-slot? (type-of obj-instance) (car item))
                               (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of object)))
                               ))
                     |#
                     ;)
-                    obj-instance
-                    )))
+                    ;obj-instance
+                    ;))
 
 
+#|
+(setf testlist '((initarg1 1) ('initarg2 2) ('initarg3 '(a b))))
 
+(type-of (caar '((initarg1 1) ('initarg2 2) ('initarg3 '(a b)))))
+
+(string-equal (string-upcase 'lmidic) "LMIDIC")
+
+(print (values-list '(:numcols 15 :e-dels '(1 2 3 4 5))))
+
+(print (intern (string-upcase "numcols") :keyword) 15)
+
+(multiple-value-bind (:numcols 15 :e-dels '(1 2 3 4 5)))
+
+(intern (string-upcase "lmdidc") :keyword)
+
+;(make-instance 'chord (intern (string-upcase "lmdidc") :keyword) '(200 400 600))
+
+;(make-instance (type-of object) (intern (string-upcase slotname) :keyword)
+
+|#
+    
 
 #|
 ;some tests
@@ -122,7 +183,8 @@
 (defun thelooper (class slotlist valuelist)
   (loop for slot in slotlist
         for value in valuelist do
-        (set-class-slot class (print slot) (print value))
+        (set-class-slot class slot value)
+        ;(setf (slot class) value)
         )
   class)
 
@@ -135,11 +197,12 @@
   )
 |#
 
-(defun set-class-slot (object slot value)
-  (eval `(setf (,slot ,object) value))
-  )
+;(defun set-class-slot (object slot value)
+;  (eval `(setf (,slot ,object) value))
+;  )
 
-
+(defun set-class-slot (class slot value)
+    (funcall (fdefinition `(setf ,slot)) value class))
 
 ; syntactic sugar for "removealltemporalboxes"
 (defmethod! clearmaq ((self ommaquette))
