@@ -68,12 +68,12 @@
           "gesture-filters"
           "gesture-statistics"
           "mapping"
+          "utilities"
           ))
 
-; here add the menu entries
 
+; MENUs
 ;(sub-pack-name subpack-lists class-list function-list class-alias-list)
-
 
 (om::fill-library '(
                     ("Filters" nil nil (slide-filter sma wma ema smm) nil)

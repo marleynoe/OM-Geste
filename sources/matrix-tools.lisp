@@ -69,9 +69,36 @@
                           collect
                           (list (index2label self i) slot)
                           ))
-                   ; could have a check here for audio, scores, etc. that will segment them, but it should be better if the gesture-model does that.
-                   ;(checked-data
-                   ;
+                   ; 
+                   ; HERE ARE NUMBER OF CASES FOR DIFFERENT DATA (would be better implemented directly in the gesture-model
+                   ; !!!!!!!!!!!!!!!!!!!!
+                   ; this requires om-sox -> if sound - segment 
+                   ; a) sound as a pipe and create sonagrams which are loaded into the model segments
+                   ; b) segment sound into shorter segments -> sounds can be used at a later point
+
+                   ; a)
+                   ;(slotvals (if (soundp slotvals)
+                   ;              (mapcar (lambda (x) (sox-spectrogram x nil 1)) 
+                   ;                      (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
+                   ;                                                    (loop for i from 1 to (1- (length timesdata)) collect
+                   ;                                                          (list (nth (1- i) timesdata) (nth i timesdata)))) :output "pipe"))
+                   ;          slotvals))    
+
+                 
+                   ; b)
+                   (slotvals (if (soundp slotvals)
+                                 (mapcar (lambda (x) (make-instance 'sound :filename x))
+                                           (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
+                                                                         (loop for i from 1 to (1- (length timesdata)) collect
+                                                                               (list (nth (1- i) timesdata) (nth i timesdata))))))
+                               slotvals))
+
+                   ; c) for score objects
+                   (slotvals (if (print (eql (type-of slotvals) 'chord-seq))
+                                 (loop for i from 1 to (print (1- (length timesdata))) collect
+                                       (select slotvals (* 1000 (nth (1- i) timesdata)) (* 1000 (nth i timesdata))))
+                               slotvals))                                                    
+
                    (newdata (print (list slotname (list slotvals))))
                    (finaldata (print (if (integerp index)
                                   (flat (interlock labeldata (list newdata) (list! index)) 1)
@@ -83,11 +110,11 @@
               ))
 
 (defmethod! add-row ((self class-array) (slotname list) (slotvals list) &optional index)
-            (print "it's me")
+            ;(print "it's me")
             (let ((themodel self))
               (if (car (list! index))
                   (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val i))) slotname slotvals index)
-                (mapc (lambda (slot val) (setf themodel (add-row themodel slot vmal))) slotname slotvals))
+                (mapc (lambda (slot val) (setf themodel (add-row themodel slot val))) slotname slotvals))
               themodel)
             )
 
