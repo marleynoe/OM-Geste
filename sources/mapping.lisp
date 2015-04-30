@@ -42,7 +42,7 @@
                            (funcall (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
                                     
                                     (loop for slot in thecontrols collect
-                                          (list (string (first slot)) (nth col (second slot)))))))
+                                          (list (string (first slot)) (nth col (second slot))))))) ;the function uses this
                          
                          (input-names (print (mapcar #'(lambda (out) 
                                             (intern (frame-name out) :om))

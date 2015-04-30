@@ -62,7 +62,8 @@
                 )))
 
 
-; method for re-segmenting a gesture-model
+; NEEDS A METHOD for (gesture-model): re-segmenting 
+; --> requires concatenating bpfs, 3DCs etc. and segmenting them again. 
 
 
 ; *** HELPER FUNCTIONS ****

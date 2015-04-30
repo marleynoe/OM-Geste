@@ -88,11 +88,12 @@
  |       www.idmil.org/people/marlon_schumacher      |
  |                ALL RIGHTS RESERVED                |
  |                                                   |
+ |     with contr. by Jean Bresson (Repmus, IRCAM)   |
  ===================================================== 
 "))
 
 ; %%%%%%%% SPLASH SCREEN %%%%%%%%%
-
+#|
 (om-message-dialog (string+
 "=========================== 
                      OM-Geste " *om-geste-version*"
@@ -105,3 +106,4 @@ https://github.com/marleynoe/OM-Geste
 :size (om-make-point 335 200) 
 :position (om-make-point 200 140)
 )
+|#
