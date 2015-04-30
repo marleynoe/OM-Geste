@@ -31,7 +31,7 @@
 ; 4) should have also the inputs named
 
 (defmethod! map-gesture ((self gesture-model) mapping-fun object)
-            :icon 02        
+            :icon 06        
             (compile-patch mapping-fun)
             (loop for col from 0 to (1- (numcols self)) collect
                   (let* ((obj-instance (make-instance (type-of object)))

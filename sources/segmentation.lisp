@@ -29,7 +29,7 @@
 
 (defmethod! segment-gesture ((self gesture-array) (times list))
 
-            :icon '(104) ;02
+            :icon 262
             :initvals '(nil nil)
             :indoc '("a gesture-array or gesture-model" "a list of times (in seconds) defining temporal segments")
             :numouts 1
@@ -68,8 +68,54 @@
 
 ; *** HELPER FUNCTIONS ****
 
-;(defmethod! concat
+; method for what?
+(defmethod! concat+pointlist ((self list))
+            (let ((valuelist)
+                  (timeslist (cond ((eql (type-
+              
+              (loop for item in self do
+                    (setf valuelist (append valuelist (point-pairs item)))
+                    )
+              valuelist))
 
+(defmethod! get-valuelists ((self bpf))
+            (let ((timelist (x-points self))
+                  (datalist (list (y-points self))))
+              (list datalist timelist)
+              ))
+
+(defmethod! get-valuelists ((self 3d-trajectory))
+            (let ((timelist (times self))
+                  (datalist (list (x-points self) (y-points self) (z-points self))))
+              (list datalist timelist)
+              ))
+
+(defmethod! concat-valuelists ((self list))
+            (let ((valueslist)
+                  (timeslist))
+              (loop for item in self do
+                    (let ((data (get-valuelists item))) ;data is a list containing '(((xxx) (yyy) (zzz)) times)
+                      (if (eql (type-of item) 'bpf)
+                          (progn
+                            (setf valueslist (append valueslist (first data))) ; maybe caar?
+                            (setf timeslist (append timeslist (second data))))
+                            ;else it's a 3D trajectory
+                        (progn
+                          
+                          (setf valueslist (list (x-append (first valueslist) (first (car data)))
+                                                 (x-append (second valueslist) (second (car data)))
+                                                 (x-append (third valueslist) (third (car data))))
+                                )
+                          
+                          (setf timeslist (append timeslist (second data))))
+                        )
+                      ))
+              (list valueslist timeslist)))
+                                                       
+                                                       
+
+; I want: valuelist and timelist
+            
 
 
 ; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio! and score objects.
@@ -86,6 +132,8 @@
 ; here I should add methods for chord-seq (using the 'select' function), audio (using 'sound-cut') etc.
 
 ; this function works only for temporal objects (i.e. objects that have a timelist)
+; this is for a gesture stream 
+
 (defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
   (let ((pos1 (position t1 timelist :test '<))
         (pos2 (position t2 timelist :from-end t :test '>)))

@@ -65,7 +65,7 @@
 ; could have an optional inlet to choose spectrogram vs audio file
 ; need to add method for voice objects
 (defmethod! add-row ((self class-array) (slotname string) (slotvals t) &optional index) 
-            :icon '(264)
+            :icon 266
             (let* ((arraydata (data self))
                    (timesdata (times self))
                    (labeldata
@@ -133,7 +133,7 @@
             )
 
 (defmethod! remove-row ((self class-array) (slotname string))
-            :icon '(264)
+            :icon 267
             (let* ((arraydata (data self))
                    (timesdata (times self))
                    (labeldata

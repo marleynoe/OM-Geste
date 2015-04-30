@@ -29,7 +29,7 @@
 
 (defclass! gesture-model (time-array)
            ()
-           (:icon 03)
+           (:icon 271)
            (:documentation "Gesture model is a tabulated representation of Gesture Streams.")
            )
 

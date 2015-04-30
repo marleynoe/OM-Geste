@@ -1,4 +1,10 @@
-;OM-Geste, 2010-2015 IDMIL/McGill University
+;*********************************************************************
+;                             OM-Geste                               *
+;     (c) 2011-2015 Marlon Schumacher (CIRMMT/McGill University)     *
+;               https://github.com/marleynoe/OM-Geste                *
+;                                                                    *
+;      Representation and Processing of Gesture Data in OpenMusic    *
+;*********************************************************************
 ;
 ;This program is free software; you can redistribute it and/or
 ;modify it under the terms of the GNU General Public License
@@ -16,8 +22,6 @@
 ;along with this program; if not, write to the Free Software
 ;Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,10 USA.
 ;
-;;; HELPER FUNCTIONS ______________________
-
 ;Authors: M. Schumacher
 
 (in-package :om)
@@ -32,11 +36,11 @@
    ;(fields :accessor fields :initarg :fields :initform nil)
    ;(rows :accessor rows :initarg :rows :initform nil)
    (timerange :accessor timerange :initarg :timerange :initform nil))
-  (:icon 01)
+  (:icon 0261)
   (:documentation "Gesture array is a selector and container of Gesture Streams.")
   )
 
-;a gesture-stream represents a stream from the gesture array (SDIF) (a GDIF descriptor)
+;a gesture-stream represents a stream from the gesture array (SDIF) (a GDIF descriptor = a matrix over time)
 (defclass! gesture-stream ()
   ((timelist :accessor timelist :initarg :timelist :initform nil)
    (substreams :accessor substreams :initarg :substreams :initform nil)
