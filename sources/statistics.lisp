@@ -1,9 +1,31 @@
+;*********************************************************************
+;                             OM-Geste                               *
+;     (c) 2011-2015 Marlon Schumacher (CIRMMT/McGill University)     *
+;               https://github.com/marleynoe/OM-Geste                *
+;                                                                    *
+;      Representation and Processing of Gesture Data in OpenMusic    *
+;*********************************************************************
+;
+;This program is free software; you can redistribute it and/or
+;modify it under the terms of the GNU General Public License
+;as published by the Free Software Foundation; either version 2
+;of the License, or (at your option) any later version.
+;
+;See file LICENSE for further informations on licensing terms.
+;
+;This program is distributed in the hope that it will be useful,
+;but WITHOUT ANY WARRANTY; without even the implied warranty of
+;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;GNU General Public License for more details.
+;
+;You should have received a copy of the GNU General Public License
+;along with this program; if not, write to the Free Software
+;Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,10 USA.
+;
+;Authors: M. Schumacher
+
 (in-package :om)
-;---------------
 
-
-;dot.jab is interesting! 
-;dot.region can also be interesting!
 
 ; for now list method works only on scalars, not on vectors
 (defmethod! differentiate ((self list) (order integer))
@@ -143,7 +165,7 @@
 (defmethod! rms ((self list) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
             :icon '(631) 
             :initvals '(nil 5)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "size of window in samples" "hopsize" "padding")
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "windowsize in samples" "hopsize" "padding")
             :numouts 1
             :doc "calculates the absolute magnitude of an n-dimensional vector."     
             (let ((thelist self))
@@ -245,6 +267,11 @@
 
 ; variance / sample variance
 (defmethod! variance ((self list) &optional (bessel nil))
+            :icon '(631)
+            :initvals '(nil nil)
+            :indoc '("a list" "Bessel's correction")
+            :numouts 1
+            :doc "Calculates the variance of a series of samples."
             (if (and bessel (> (length self) 2))
                 (/ (om-sum^2 (om- self (mean self))) (- (length self) 1))
               (/ (om-sum^2 (om- self (mean self))) (length self))
@@ -261,8 +288,8 @@
 
 (defmethod! stdev ((self list) &optional (bessel nil) (windowsize nil) (hopsize 1))
             :icon '(631)
-            :initvals '(nil nil 1)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "calculates standard deviation / sample standard deviation")
+            :initvals '(nil nil nil 1)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "Bessel's correction" "windowsize in samples" "hopsize in samples")
             :numouts 1
             :doc "calculates the standard deviation or sample standard deviation."
             (let ((thelist self))
@@ -301,6 +328,9 @@
 
 
 
+
+;dot.jab is interesting! 
+;dot.region can also be interesting!
 
 ;; **** NOT IMPLEMENTED YET *****
 ;; Covariance and Correlation
@@ -375,6 +405,11 @@
 |#
 
 (defmethod! centroid ((tuples list))
+            :icon '(631)
+            :initvals '(nil nil 1)
+            :indoc '("a list")
+            :numouts 1
+            :doc "Calculates the center-of-gravity (centroid) of a series of samples."
             (let* ((translist (mat-trans tuples))
                    (xpoints (first translist))
                    (ypoints (om-abs (second translist))))
@@ -391,13 +426,14 @@
             (centroid (point-pairs self))
             )
 
+; ****** PEAK FINDING FUNCTION *****
 
 (defmethod! find-peaks ((self list) (mode t) &key (numpeaks nil) (test '>) (decimals 10)) ; instead of numpeaks could be a slope threshold or similar
             :icon '(233)
-            :indoc '("a bpf or point-list" "mode (Peak or Trough)" "Number of Peaks to find" "sorting function for result" "decimals for calculation" "delta step to determine peak or trough")
+            :indoc '("a bpf or point-list" "mode (Peak or Trough)" "Number of peaks to find" "Sorting function for result" "Decimals for calculation")
             :initvals '(((0 1) (5 10) (10 1)) peak nil > 10) ; no quote needed because it is already quoted
             :menuins '((1 (("peak" 'peak) ("trough" 'trough))) (3 ((">" >) ("<" <))))
-            :doc "finds the n highest/lowest peaks or troughs in a bpf or point-list"
+            :doc "Attempts to find the n highest/lowest peaks or troughs in a bpf or point-list."
             (if (listp (car self))
                 (let* ((transpoints (mat-trans self))
                        (thederivativepoints (list (first transpoints) (differentiate (second transpoints) 1)))

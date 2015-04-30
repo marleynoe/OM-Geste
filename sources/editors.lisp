@@ -1,39 +1,30 @@
+;*********************************************************************
+;                             OM-Geste                               *
+;     (c) 2011-2015 Marlon Schumacher (CIRMMT/McGill University)     *
+;               https://github.com/marleynoe/OM-Geste                *
+;                                                                    *
+;      Representation and Processing of Gesture Data in OpenMusic    *
+;*********************************************************************
+;
+;This program is free software; you can redistribute it and/or
+;modify it under the terms of the GNU General Public License
+;as published by the Free Software Foundation; either version 2
+;of the License, or (at your option) any later version.
+;
+;See file LICENSE for further informations on licensing terms.
+;
+;This program is distributed in the hope that it will be useful,
+;but WITHOUT ANY WARRANTY; without even the implied warranty of
+;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;GNU General Public License for more details.
+;
+;You should have received a copy of the GNU General Public License
+;along with this program; if not, write to the Free Software
+;Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,10 USA.
+;
+;Authors: J. Bresson, M. Schumacher
 
 (in-package :om)
-
-#|
-;;;===========================================================================
-;;; OM-Spat
-;;; Rendering of spatial scene descriptions 
-;;; J. Bresson (IRCAM - 2010)
-;;;===========================================================================
-
-;;;===========================================================================
-;;; SPAT-MATRIX
-;;;===========================================================================
-
-(in-package :om)
-
-(defclass! spat-matrix (class-array) 
-  ((sounds :initarg :sounds :initform nil)
-   (trajectories :initarg :trajectories :initform nil)
-   (durations :initarg :durations :initform nil)
-   (onsets :initarg :onsets :initform nil)
-   (orientations :initarg :orientations :initform nil)
-   (apertures :initarg :apertures :initform nil)
-   (src-names :initarg :src-names :initform nil))
-  (:documentation "
-SPAT-MATRIX is a structured representation of a spatial sound scene.
-The current available parameters are 
-
-- <sounds> : list of sound sources
-- <trajectories> : list of trajectories (BPC, 3DC or 3D-trajectory)
-- <durations> : list of durations on which trajectories are eventually mapped
-- <onsets> : list of onset times for beginning of sources palyback and movement
-")
-  (:icon 501))
-|#  
- 
 
 (defclass! gesture-matrix (class-array) 
   ((stream-1 :initarg :stream-1 :initform nil))

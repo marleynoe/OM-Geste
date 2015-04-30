@@ -1,84 +1,20 @@
 (in-package :om)
 
-; some filtering functions
-
-; good-ol b-splines (polynomial interpolation)
-
-(defmethod! b-spline ((self bpf) &key (order 3) resample mode)
-            :icon '(631)  
-            :initvals '(nil 3 100 lowpass)
-            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of polynomial function (integer)" "defines resampling of curve (integer=points, decimal=factor")
-            :numouts 1
-            :menuins '((3 (( "lowpass" lowpass ) ("highpass" highpass)))) 
-            :doc "Calculates a b-spline curve (piecewise polynomial function) of order <order> over the points in <self>. 
-
-<resample> defines how to sample this curve: 
-if <resample> is an integer it corresponds to number of samples 
-if <resample> is a decimal it is a factor of the points in the original curve."
-            (let ((thesplined
-                   (cond ((integerp resample) (om-spline self resample order))
-                         ((floatp resample) (om-spline self (round (* resample (length (point-pairs self)))) order))
-                         (t (om-spline self (length (point-pairs self)) order))
-                         )))
-              (if (eq mode 'highpass)
-                  (let* ((splinedtranspoints (mat-trans (point-pairs thesplined)))
-                         (origtranspoints (mat-trans (point-pairs (om-sample self (length (first splinedtranspoints))))))
-                         )
-                    (simple-bpf-from-list (first splinedtranspoints) (om- (second origtranspoints) (second splinedtranspoints)) 'bpf (decimals self)))
-                thesplined)
-              ))
 
 
-(defmethod! b-spline ((self list) &key (order 3) resample mode)
-  (mapcar #'(lambda (theobject) (b-spline theobject :order order :resample resample :mode mode)) 
-                    self))
+; This file  contains filtering functions for low-/high-pass filtering for conditioning and other purposes
 
-; temporary method/trick to be able to have b-spline work with 3d-trajectories
 
-(defmethod! b-spline ((self 3d-trajectory) &key (order 3) resample (mode lowpass))
-            (let* (;(the3DC (3dc-from-list (x-points self) (y-points self) (print (z-points self)) '3dc (decimals self))) ; probbaly not required 
-                   (numpoints (cond ((integerp resample) resample)
-                                    ((floatp resample) (round (* resample (length (point-pairs self)))))
-                                    (t (length (point-pairs self)))))
-                   
-                   (nutraject (clone self))
-                   (thetimes (times nutraject))
-                   (transpoints (mat-trans (point-pairs nutraject)))
-                   (xbpf (b-spline (simple-bpf-from-list thetimes (first transpoints) 'bpf (decimals self)) :order order :resample numpoints :mode mode))
-                   (ybpf (b-spline (simple-bpf-from-list thetimes (second transpoints) 'bpf (decimals self)):order order :resample numpoints :mode mode))
-                   (zbpf (b-spline (simple-bpf-from-list thetimes (third transpoints) 'bpf (decimals self)) :order order :resample numpoints :mode mode))
-                   
-                   ;(numpoints (length (first thesplinedpoints)))
-                   ;(nutimes (nth 2 (multiple-value-list (om-sample thetimes numpoints))))
-                   ;(timedtraject (setf (times nutraject) nutimes)))
-                   (timedtraject (traject-from-list (y-points xbpf) 
-                                                    (y-points ybpf) 
-                                                    (y-points zbpf) (x-points xbpf) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))))
-                   timedtraject))
-                   
 
-; simple-moving-average (FIR)
-; 3 options: padding y/n, hop-size y/n, 
+; %%%%%%%%%%%%%%%%%%%%%%
+; MOVING AVERAGE FILTERS
 
-#|
-; the subseq is interesting.
-(om::defmethod! low-pass  ((data list) (window number)) 
-  :initvals '('(1 2 3 4 5 6)   100 )
-  :indoc '("list of data"  "window size in samples data" )
-  :icon '(213) 
-  :numouts 1
-  :doc   " traditional Low pass filter, where <list> is the data flow to filter and <window> 
-is the parameter to calculate the window delay. The <window delay> will be (2*window + 1)"
-  
-  (om::x-append (om::first-n data (1- window))
-                (loop for x in data
-                      for i from window to (length data)
-                      collect (om::om-mean (subseq data (- i window) i)))))
-|#
+; note: moving average filters introduce lag which should be compensated for by shifting by half the window length
 
-; moving average filters introduce lag which should be compensated for by shifting by half the window length
-; I need to keep the same number of sample points because of the x-values in the bpf (time) - otherwise need to resample the bpf
 
+; *************************************
+; **** Simple Moving Average (sma) ****
+         
 (defmethod! sma ((self list) (windowsize number) &key (recursion 1) mode)
             :icon '(631)  
             :initvals '(nil 5 1 lowpass)
@@ -132,7 +68,10 @@ is the parameter to calculate the window delay. The <window delay> will be (2*wi
               ))
 
 
-; weighted moving average
+; ***************************************
+; **** Weighted Moving Average (wma) ****
+
+; Uses linear weighting
 
 (defmethod! wma ((self list) (windowsize number) &optional (recursion 1))
             :icon '(631)   
@@ -168,7 +107,12 @@ is the parameter to calculate the window delay. The <window delay> will be (2*wi
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
 
-; exponential moving average
+
+
+; ******************************************
+; **** Exponential Moving Average (ema) ****
+; Note,  this is an IIR filter (thus, now windowsize)
+
 (defmethod! ema ((self list) (alpha number) &key (recursion 1) mode)
             :icon '(631)  
             :initvals '(nil 10 1 lowpass)
@@ -207,12 +151,12 @@ is the parameter to calculate the window delay. The <window delay> will be (2*wi
               ))
 
 
-; exponential moving deviation   
-(defmethod! emd ((self list) (alpha number))
-            (ema (om-abs (om- self (ema self alpha))) alpha)
-            )
+; %%%%%%%%%%%%%%%%%%%%%%
+; MEDIAN FILTER
 
-; simple-moving-median
+; ************************************
+; **** Simple Moving Median (smm) ****
+
 (defmethod! smm ((self list) (windowsize number) &optional (recursion 1))
             :icon '(631)  
             :initvals '(nil 5 1)
@@ -243,4 +187,85 @@ is the parameter to calculate the window delay. The <window delay> will be (2*wi
               ))
 
 
+; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+; INTERPOLATION / CURVE FITTING
+
+; **********************************************
+; **** B-Splines (Polynomial Interpolation) ****
+
+(defmethod! b-spline ((self bpf) &key (order 3) resample mode)
+            :icon '(631)  
+            :initvals '(nil 3 100 lowpass)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of polynomial function (integer)" "defines resampling of curve (integer=points, decimal=factor")
+            :numouts 1
+            :menuins '((3 (( "lowpass" lowpass ) ("highpass" highpass)))) 
+            :doc "Calculates a b-spline curve (piecewise polynomial function) of order <order> over the points in <self>. 
+
+<resample> defines how to sample this curve: 
+if <resample> is an integer it corresponds to number of samples 
+if <resample> is a decimal it is a factor of the points in the original curve."
+            (let ((thesplined
+                   (cond ((integerp resample) (om-spline self resample order))
+                         ((floatp resample) (om-spline self (round (* resample (length (point-pairs self)))) order))
+                         (t (om-spline self (length (point-pairs self)) order))
+                         )))
+              (if (eq mode 'highpass)
+                  (let* ((splinedtranspoints (mat-trans (point-pairs thesplined)))
+                         (origtranspoints (mat-trans (point-pairs (om-sample self (length (first splinedtranspoints))))))
+                         )
+                    (simple-bpf-from-list (first splinedtranspoints) (om- (second origtranspoints) (second splinedtranspoints)) 'bpf (decimals self)))
+                thesplined)
+              ))
+
+
+(defmethod! b-spline ((self list) &key (order 3) resample mode)
+  (mapcar #'(lambda (theobject) (b-spline theobject :order order :resample resample :mode mode)) 
+                    self))
+
+; temporary method/trick to be able to have b-spline work with 3d-trajectories
+(defmethod! b-spline ((self 3d-trajectory) &key (order 3) resample (mode lowpass))
+            (let* (;(the3DC (3dc-from-list (x-points self) (y-points self) (print (z-points self)) '3dc (decimals self))) ; probbaly not required 
+                   (numpoints (cond ((integerp resample) resample)
+                                    ((floatp resample) (round (* resample (length (point-pairs self)))))
+                                    (t (length (point-pairs self)))))
+                   
+                   (nutraject (clone self))
+                   (thetimes (times nutraject))
+                   (transpoints (mat-trans (point-pairs nutraject)))
+                   (xbpf (b-spline (simple-bpf-from-list thetimes (first transpoints) 'bpf (decimals self)) :order order :resample numpoints :mode mode))
+                   (ybpf (b-spline (simple-bpf-from-list thetimes (second transpoints) 'bpf (decimals self)):order order :resample numpoints :mode mode))
+                   (zbpf (b-spline (simple-bpf-from-list thetimes (third transpoints) 'bpf (decimals self)) :order order :resample numpoints :mode mode))
+                   
+                   ;(numpoints (length (first thesplinedpoints)))
+                   ;(nutimes (nth 2 (multiple-value-list (om-sample thetimes numpoints))))
+                   ;(timedtraject (setf (times nutraject) nutimes)))
+                   (timedtraject (traject-from-list (y-points xbpf) 
+                                                    (y-points ybpf) 
+                                                    (y-points zbpf) (x-points xbpf) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))))
+                   timedtraject))
+
+
+; exponential moving deviation   
+(defmethod! emd ((self list) (alpha number))
+            (ema (om-abs (om- self (ema self alpha))) alpha)
+            )
+
+
+
+#|
+; the subseq is interesting.
+
+(om::defmethod! low-pass  ((data list) (window number)) 
+  :initvals '('(1 2 3 4 5 6)   100 )
+  :indoc '("list of data"  "window size in samples data" )
+  :icon '(213) 
+  :numouts 1
+  :doc   " traditional Low pass filter, where <list> is the data flow to filter and <window> 
+is the parameter to calculate the window delay. The <window delay> will be (2*window + 1)"
+  
+  (om::x-append (om::first-n data (1- window))
+                (loop for x in data
+                      for i from window to (length data)
+                      collect (om::om-mean (subseq data (- i window) i)))))
+|#
                       

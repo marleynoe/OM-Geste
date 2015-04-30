@@ -32,7 +32,9 @@
    ;(fields :accessor fields :initarg :fields :initform nil)
    ;(rows :accessor rows :initarg :rows :initform nil)
    (timerange :accessor timerange :initarg :timerange :initform nil))
-  (:icon 02))
+  (:icon 01)
+  (:documentation "Gesture array is a selector and container of Gesture Streams.")
+  )
 
 ;a gesture-stream represents a stream from the gesture array (SDIF) (a GDIF descriptor)
 (defclass! gesture-stream ()

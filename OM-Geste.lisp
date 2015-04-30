@@ -1,4 +1,10 @@
-;OM-Geste, 2010-2015 IDMIL/McGill University
+;*********************************************************************
+;                             OM-Geste                               *
+;     (c) 2011-2015 Marlon Schumacher (CIRMMT/McGill University)     *
+;               https://github.com/marleynoe/OM-Geste                *
+;                                                                    *
+;      Representation and Processing of Gesture Data in OpenMusic    *
+;*********************************************************************
 ;
 ;This program is free software; you can redistribute it and/or
 ;modify it under the terms of the GNU General Public License
@@ -23,28 +29,9 @@
 ; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
 (defparameter *om-geste-lib-path* (make-pathname :directory (pathname-directory *load-pathname*)))
+(defparameter *om-geste-version* "0.5.0")
 ;(clean-sources *om-geste-lib-path*)
-
-#|
-(defparameter *geste-classes* '(
-                        ;"gesture-model"
-                        "gesture-array"
-                        ))
-
-(defun load-geste-classes (subdir &optional pack)
-  (loop for item in *geste-classes* do  
-        (let ((itempath (om-relative-path subdir item)))
-          (compile&load itempath)
-          (let ((classname (intern (string-upcase item))))
-            (when (and pack (find-class classname nil))              
-              (addclass2pack classname pack))))
-        )
-  )
-
-(load-geste-classes  '("sources" "classes") (find-library "OM-geste"))
-|#
                       
 (defun recursive-load-classes (dir &optional pack)
   (loop for item in (om-directory dir) do
@@ -62,11 +49,11 @@
 
 (mapcar #'(lambda (file) (compile&load (om-relative-path '("sources") file )))
         '(
-          "gesture-objects"
-          "gesture-editor"
-          "matrix-tools"
-          "gesture-filters"
-          "gesture-statistics"
+          "segmentation"
+          "editors"
+          "array-tools"
+          "filters"
+          "statistics"
           "mapping"
           "utilities"
           ))
@@ -85,6 +72,36 @@
 )
 
 
-(print "
-OM-Geste 0.1.0
-")
+
+(format *om-stream* (string+ 
+"
+ =====================================================
+ |                    OM-Geste "*om-geste-version*
+"                 |
+ |                   ----------------                |
+ |                                                   |
+ |       Gesture Representation and Processing       |
+ |                  for Open Music                   |
+ |       https://github.com/marleynoe/OM-Geste       |
+ |                                                   |
+ |   (c) Marlon Schumacher, CIRMMT/McGill 2011-2015  |
+ |       www.idmil.org/people/marlon_schumacher      |
+ |                ALL RIGHTS RESERVED                |
+ |                                                   |
+ ===================================================== 
+"))
+
+; %%%%%%%% SPLASH SCREEN %%%%%%%%%
+
+(om-message-dialog (string+
+"=========================== 
+                     OM-Geste " *om-geste-version*"
+
+https://github.com/marleynoe/OM-Geste
+  (c) Marlon Schumacher, 2011-2015        
+") 
+:window-title *om-geste-version* 
+
+:size (om-make-point 335 200) 
+:position (om-make-point 200 140)
+)

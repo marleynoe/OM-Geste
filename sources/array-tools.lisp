@@ -1,4 +1,10 @@
-;OM-Geste, 2011-2015 McGill University
+;*********************************************************************
+;                             OM-Geste                               *
+;     (c) 2011-2015 Marlon Schumacher (CIRMMT/McGill University)     *
+;               https://github.com/marleynoe/OM-Geste                *
+;                                                                    *
+;      Representation and Processing of Gesture Data in OpenMusic    *
+;*********************************************************************
 ;
 ;This program is free software; you can redistribute it and/or
 ;modify it under the terms of the GNU General Public License
@@ -23,6 +29,7 @@
 ;%%%%%%%%%% PROCESS ARRAY %%%%%%%%%%%%%%
 
 ;;make methods for lists of processes!
+; I think for the chroma user-fun it is possible to use lists of processes
 
 (defmethod! build-array ((components list))
             :icon '(264)
@@ -55,19 +62,14 @@
                    (thenewarray (build-model (flat complist) (times self)))
               thenewarray)))
 
-(defmethod! get-components ((array class-array))
-            :icon '(323)
-            (mapcar (lambda (theindex)
-                      (get-comp array theindex)) (arithm-ser 0 (1- (numcols array)) 1)))
 
-(defmethod! get-components ((array list))
-  (flat (mapcar (lambda (thearrays)
-            (get-components thearrays)) array)))
-
-(defmethod! add-row ((self class-array) (slotname string) (slotvals t))
+; slotvals should be called 'data'
+; **** MATRIX MANIPULATIONS (adding and removing rows and columns) ********
+; could have an optional inlet to choose spectrogram vs audio file
+; need to add method for voice objects
+(defmethod! add-row ((self class-array) (slotname string) (slotvals t) &optional index) 
             :icon '(264)
-            (let* (;(thearray (clone self))
-                   (arraydata (data self))
+            (let* ((arraydata (data self))
                    (timesdata (times self))
                    (labeldata
                     (loop for slot in arraydata
@@ -75,14 +77,196 @@
                           collect
                           (list (index2label self i) slot)
                           ))
-                   (finaldata (x-append (flat labeldata 1) slotname (list slotvals))))
-              (print labeldata)
-              (print timesdata)
+                   ; 
+                   ; HERE ARE NUMBER OF CASES FOR DIFFERENT DATA (would be better implemented directly in the gesture-model
+                   ; !!!!!!!!!!!!!!!!!!!!
+                   ; this requires om-sox -> if sound - segment 
+                   ; a) sound as a pipe and create sonagrams which are loaded into the model segments
+                   ; b) segment sound into shorter segments -> sounds can be used at a later point
+
+                   ; a)
+                   ;(slotvals (if (soundp slotvals)
+                   ;              (mapcar (lambda (x) (sox-spectrogram x nil 1)) 
+                   ;                      (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
+                   ;                                                    (loop for i from 1 to (1- (length timesdata)) collect
+                   ;                                                          (list (nth (1- i) timesdata) (nth i timesdata)))) :output "pipe"))
+                   ;          slotvals))    
+
+                 
+                   ; b)
+                   (slotvals (if (soundp slotvals)
+                                 (mapcar (lambda (x) (make-instance 'sound :filename x))
+                                           (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
+                                                                         (loop for i from 1 to (1- (length timesdata)) collect
+                                                                               (list (nth (1- i) timesdata) (nth i timesdata))))))
+                               slotvals))
+
+                   ; c) for score objects
+                   (slotvals (if (print (eql (type-of slotvals) 'chord-seq))
+                                 (loop for i from 1 to (print (1- (length timesdata))) collect
+                                       (select slotvals (* 1000 (nth (1- i) timesdata)) (* 1000 (nth i timesdata))))
+                               slotvals))                                                    
+
+                   (newdata (print (list slotname (list slotvals))))
+                   (finaldata (print (if (integerp index)
+                                  (flat (interlock labeldata (list newdata) (list! index)) 1)
+                              (x-append (flat labeldata 1) slotname (list slotvals))))))
+              ;(print labeldata)
+              ;(print timesdata)
+              ;(print finaldata)
               (set-array (type-of self) (times self) finaldata)
               ))
-;;;;;
+
+(defmethod! add-row ((self class-array) (slotname list) (slotvals list) &optional index)
+            ;(print "it's me")
+            (let ((themodel self))
+              (if (car (list! index))
+                  (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val i))) slotname slotvals index)
+                (mapc (lambda (slot val) (setf themodel (add-row themodel slot val))) slotname slotvals))
+              themodel)
+            )
+
+(defmethod! remove-row ((self class-array) (slotname string))
+            :icon '(264)
+            (let* ((arraydata (data self))
+                   (timesdata (times self))
+                   (labeldata
+                    (loop for slot in arraydata
+                          for i from 0 to (1- (length arraydata))
+                          collect
+                          (unless (string-equal (print (index2label self i)) slotname)
+                            (list (index2label self i) slot)
+                          )))
+                   (finaldata (flat labeldata 1)))
+              ;(print labeldata)
+              ;(print timesdata)
+              ;(print finaldata)
+              (set-array (type-of self) (times self) finaldata)
+              ))
+
+(defmethod! remove-row ((self class-array) (slotname list))
+            (let ((themodel self))
+              (mapc (lambda (slot) (setf themodel (remove-row themodel slot))) slotname)
+              themodel)
+            )
+
+; add-/remove-column is non-trivial for a time-array - what happens with temporal information of the data being added? offset?
+
+#| 
+; can't get it to output the modified 'newarray'
+(defmethod! add-column ((self gesture-model) (column list) &optional index)
+            :icon '(264)
+            (let* ((newarray (clone self))
+                   (newcomp (new-comp column))
+                   (myarray (add-comp newarray newcomp)))
+            newarray))
+           
+(defmethod! add-column ((self gesture-model) (column list) &optional index)
+            :icon '(264)
+            (print "here")
+            (let* ((arraydata (data self))
+                   (timesdata (times self))
+                   (labeldata
+                    (loop for slot in arraydata
+                          for value in column
+                          for i from 0 to (1- (length arraydata))
+                          collect
+                          (list (index2label self i) (x-append slot value))
+                          ))               
+                   (finaldata (print (flat labeldata 1)))
+              ;(print labeldata)
+              ;(print timesdata)
+              ;(print finaldata)
+                   (newarray (set-array (type-of self) (times self) finaldata)))
+              newarray))
+
+;build-model doesn't work
+(defmethod! add-column ((self gesture-model) (column list) &optional index)
+            (let* ((selfcomps (get-components self))
+                   (newcomp (new-comp column))
+                   (thenewarray (build-model (print (x-append selfcomps newcomp)) (times self))))
+              thenewarray))
+
+(defmethod* add-comp2 ((self class-array) (comp component) &optional position)
+   :initvals '(nil nil)
+   :indoc '("a class-array instance"  "a component instance" "position in the array")
+   :doc "Adds <comp> in <self> at <pos>.
+If <pos> is not specified, the component is added at the end of the array."
+   :icon 323
+   (let* ((newarray (clone self))
+          (pos (or position (numcols newarray))))
+     (setf (comp-array comp) newarray)
+     (setf (index comp) pos)
+     (add-array-col newarray pos (val-list comp))
+     (loop for cmp in (attached-components newarray) do
+           (when (>= (index cmp) pos)
+             (setf (index cmp) (1+ (index cmp)))))
+     (push comp (attached-components newarray))
+     newarray))
+|#
+
+#|
+(defmethod! remove-column ((self class-array) (index integer))
+            :icon '(264)
+            (let* ((array (clone self))
+                   (comp (get-comp array index)))
+              (remove-comp comp)
+              array))
+            
+(defmethod! remove-column ((self gesture-model) (index integer))
+            :icon '(264)
+            (print "here")
+            (let* ((array (clone self))
+                   (comp (get-comp array index)))            
+              (remove-comp comp)
+              ;(setf (times array) (remove (nth index (times array)) (times array)))
+              array))
+
+(let* ((arraydata (data self))
+                   (timesdata (times self))
+                   (labeldata
+                    (loop for slot in arraydata
+                          for i from 0 to (1- (length arraydata))
+                          collect
+                          (unless (string-equal (print (index2label self i)) slotname)
+                            (list (index2label self i) slot)
+                          )))
+                   (finaldata (flat labeldata 1)))
+              ;(print labeldata)
+              ;(print timesdata)
+              ;(print finaldata)
+              (set-array (type-of self) (times self) finaldata)
+              ))
+
+|#
+
+
+;;=====================
+; ACCESS MODEL DATA
+;;=====================
+; ToDo: catch error when index for row/column is beyond matrix dimensions
+
+(defmethod! get-column ((array class-array) (column number))
+            :icon 322
+            (comp-list (get-comp array column))
+            )
+
+(defmethod! get-column ((array class-array) (column list))
+            (mapcar (lambda (x) (get-column array x)) column)
+            )
+
+
+(defmethod! get-row ((array class-array) (row number))
+            :icon 323
+            (nth row (data array))
+            )
+
+(defmethod! get-row ((array class-array) (row list))
+            (mapcar (lambda (x) (get-row array x)) row)
+            )
+
 (defmethod! get-field ((array class-array) (column number) (row number))
-            :icon '(323)
+            :icon 321
             (comp-field (get-comp array column) row)
             )
 
@@ -91,15 +275,22 @@
                       (get-field array thecolumn therow)) column row)
             )
 
-(defmethod! get-column ((array class-array) (column number))
-            :icon '(323)
-            (comp-list (get-comp array column))
+(defmethod! get-field ((array class-array) (column list) (row number))
+            (get-field array column (repeat-n row (length column)))
             )
 
-(defmethod! get-row ((array class-array) (row number))
-            :icon '(323)
-            (nth row (data array))
+(defmethod! get-field ((array class-array) (column number) (row list))
+            (get-field array (repeat-n row (length row)) row)
             )
+
+(defmethod! get-components ((array class-array))
+            :icon 322
+            (mapcar (lambda (theindex)
+                      (get-comp array theindex)) (arithm-ser 0 (1- (numcols array)) 1)))
+
+(defmethod! get-components ((array list))
+  (flat (mapcar (lambda (thearrays)
+            (get-components thearrays)) array)))
 
 #|
 (defmethod! set-array-slot ((self class-array) (slotname t) (slotvals t))
@@ -120,27 +311,8 @@
               ))
 |#
 
-(defmethod! set-array-slot ((array class-array) (slotname string) (slotvals t))
-            :icon '(264)
-            (let ((newarray array))
-           ; (setf ((label2index newarray slotname) newarray) slotvals)
-            ;  (label2index newarray slotname)
-              ;(setf (#'slotname newarray) slotvals)
-              (setf #'(lambda (theslotname)
-                      (theslotname newarray) slotname) slotvals)
-            (set-data newarray)
-            newarray         
-            ))
 
-
-
-(defun set-array (type numcols params)
-  (let ((array (cons-array (make-instance type) (list nil numcols 0 nil) params)))
-    (set-data array)
-    array)
-  )
-
-
+;;; no set-array function here
 
 (defmethod! process-array ((process t) (array class-array))
             :icon '(264)
@@ -162,31 +334,29 @@
             ))
 |#
 
-; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. 
-; If nil returns all rows one by one
-; 
+; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. If nil returns all rows one by one
 
 (defmethod! process-rows ((process t) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
-                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+                    (apply process (list thearray))
             thearray
             ))
-
+#|
 (defmethod! process-row ((process t) (slotname string) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
-                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+                    (apply process (list thearray))
             thearray
             ))
+|#
 
 (defmethod! process-model ((process t) (array class-array))
             :icon '(264)
             (let ((thearray (clone array)))
-                    (apply process (list thearray)) ;what's the difference to 'funcall' ?
+                    (apply process (list thearray))
             thearray
             ))
-
 
 
 (defmethod! process-columns ((process t) (array class-array))
@@ -239,7 +409,6 @@
             thearray
             ))
 
-
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; NEW
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -249,6 +418,7 @@
 ; could have a keyword or optional which allows to choose between a single list or a loop with elements
 ; probably make the keyword intead of the rowname for this choice/option
 
+; 'slotname' arg should become 'row'
 (defmethod! process-row ((process t) (slotname string) (array class-array) &optional rowname)
             :icon '(264)
             (let* ((thearray (clone array))
@@ -312,12 +482,12 @@
               thearray
               ))
 
-
 ;%%%%%%%%%%%% PROCESS COLUMN %%%%%%%%%%%%%%%%
 
 ; still need the case that if 'index' is nil it iterates through all of them
 ; this could again do an iteration through the list or provide the entire list
 ; -> don't know if it would be useful to 'make' another component (-> what about the temporality of this)
+
 
 (defmethod! process-column ((process t) (index integer) (array class-array))
             :icon '(264)
@@ -454,6 +624,7 @@
                    (curve (mat-trans (list xvals yvals))))
               (array-field self slotname (third (multiple-value-list (om-sample (second (mat-trans (reduce-n-points curve points precision))) numcomps))))
               ))
+
 #|
 (defmethod! reduce-n-points ((self 3D-trajectory) n &optional (precision 10))
      (let ((reduced-points (print (reduce-n-points (point-pairs self) n precision))))
@@ -481,8 +652,8 @@
 
 
 ;Need a Smoothing+Downsample! ->this can be constructed
-
 ;Maybe the 'stream-resample' should be simply a 'resample' that works on slots or components..
+;this can be done via an om-sample applied to the process-row or process-column methods
 
 (defmethod! stream-resample ((self class-array) (slotname string) (downsampling number))
             :icon 04
@@ -621,13 +792,9 @@
             )
 |#
 
-; %%%% slot-methods %%%%%%%%
+; %%%% slot-methods %%%%%%%%                                
 
-(defmethod! slot-paths ((thedata list) (discard-levels number) (new-dir t) (keep-levels number))
-            :icon 04
-            (convert-paths thedata discard-levels new-dir keep-levels)
-            )
-                  
+; if I add a method for bpfs, etc. to om-scale-exp it should work on components or rows depending on the processing function
 
 (defmethod! slot-scale ((thedata list) &key minval maxval exp)
             :icon 04
@@ -662,8 +829,37 @@
               ))
 
 
+;=====================
+; HELPER FUNCTIONS
+;=====================
 
-;;; HELPER FUNCTIONS ______________________
+(defmethod! set-array-slot ((array class-array) (slotname string) (slotvals t))
+            :icon '(264)
+            (let ((newarray array))
+           ; (setf ((label2index newarray slotname) newarray) slotvals)
+            ;  (label2index newarray slotname)
+              ;(setf (#'slotname newarray) slotvals)
+              (setf #'(lambda (theslotname)
+                      (theslotname newarray) slotname) slotvals)
+            (set-data newarray)
+            newarray         
+            ))
+
+(defun set-class-slots (class slot value)
+    (funcall (fdefinition `(setf ,slot)) value class))
+
+(defun set-array (type numcols params)
+  (let ((array (cons-array (make-instance type) (list nil numcols 0 nil) params)))
+    (set-data array)
+    array)
+  )
+
+(defun set-array2 (type numcols action-time params)
+  (let ((array (cons-array (make-instance type) (list nil numcols action-time nil) params)))
+    (set-data array)
+    array)
+  )
+
 
 ; I can use 'index' on the component here to save some ressources
 
@@ -671,10 +867,10 @@
             :icon '(323)
             :initvals '(nil nil nil)
             :outdoc '("the slotvalues")
-            (if newvalues 
-                (let* ((newvalues (list! newvalues))
+            (if  newvalues 
+                (let ((newvalues (list! newvalues))
                       (indices (arithm-ser 0 (length newvalues) 1)))
-                  ;(print newvalues)
+                  (print newvalues)
                   (mapcar (lambda (thevalue theindex)
                             (comp-field (get-comp self theindex) slotname thevalue)) 
                           newvalues indices))
@@ -685,6 +881,7 @@
             (flat (mapcar (lambda (theslotname thenewvalues)
                       (array-field self theslotname thenewvalues)) slotname newvalues)
             ))
+
 
 (defmethod! get-comp-vals ((self component) (thefunction t) &rest slotnames)
             :icon '(323)
@@ -711,7 +908,7 @@
             (values (first self) (second self))
             )
 
-(defmethod! quantize ((self number) interval)item
+(defmethod! quantize ((self number) interval)
             (if (and self interval)
                 (om* (om-round (om/ self interval)) interval)
               self
