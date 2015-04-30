@@ -26,7 +26,7 @@
 
 ; Notes: 
 ; 1) Needs a map-column, map-row function (where the lambda patch can see the entire picture)?
-; 2) if I want to have dynamic mappins I need to be able to see the entire model or at least slot
+; 2) if I want to have dynamic mappings I need to be able to see the entire model or at least slot
 ; 3) -> not if this is already introduced in the model
 ; 4) should have also the inputs named
 
@@ -37,16 +37,16 @@
                   (let* ((obj-instance (make-instance (type-of object)))
                          ;(print (slot-definition-name (class-slots (class-of box))))
                          (thecontrols (lcontrols self))
-                         (vals                      
+                         (vals                     
                           (multiple-value-list 
                            (funcall (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
                                     
                                     (loop for slot in thecontrols collect
                                           (list (string (first slot)) (nth col (second slot)))))))
                          
-                         ;(input-names (print (mapcar #'(lambda (out) 
-                         ;                   (intern (frame-name out) :om))
-                         ;               (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
+                         (input-names (print (mapcar #'(lambda (out) 
+                                            (intern (frame-name out) :om))
+                                        (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
                          
                          (names (mapcar #'(lambda (out) 
                                             (intern (string-upcase (frame-name out)) :om))

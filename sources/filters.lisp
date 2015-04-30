@@ -25,7 +25,7 @@
             (let ((thelist self))
 
               (if (numberp (car thelist)) ; means it's a list of numbers
-               
+                  
                   (loop for i from 1 to recursion do
                         (let*  ((begin (ceiling (* 0.5 (1- windowsize)))) 
                                 (end (floor (* 0.5 (1- windowsize))))
@@ -47,20 +47,20 @@
               thelist)
             )
 
-(defmethod! sma ((self bpf) (windowsize number) &key recursion mode)
+(defmethod! sma ((self bpf) (windowsize number) &key (recursion 1) mode)
             (let ((xpoints (x-points self))
                   (ypoints (sma (y-points self) windowsize :recursion recursion :mode mode)))
               (simple-bpf-from-list xpoints ypoints 'bpf (decimals self))
               ))
 
 (defmethod! sma ((self 3dc) (windowsize number) &key (recursion 1) mode)
-            (let ((xpoints (sma (x-points self):recursion recursion :mode mode))
+            (let ((xpoints (sma (x-points self) :recursion recursion :mode mode))
                   (ypoints (sma (y-points self) :recursion recursion :mode mode))
                   (zpoints (sma (z-points self) :recursion recursion :mode mode)))
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
 
-(defmethod! sma ((self 3d-trajectory) (windowsize number) &key (recursion 1)  mode)
+(defmethod! sma ((self 3d-trajectory) (windowsize number) &key (recursion 1) mode)
             (let ((xpoints (sma (x-points self) windowsize :recursion recursion :mode mode))
                   (ypoints (sma (y-points self) windowsize :recursion recursion :mode mode))
                   (zpoints (sma (z-points self) windowsize :recursion recursion :mode mode)))

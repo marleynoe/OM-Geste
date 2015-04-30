@@ -28,9 +28,6 @@
 
 ;%%%%%%%%%% PROCESS ARRAY %%%%%%%%%%%%%%
 
-;;make methods for lists of processes!
-; I think for the chroma user-fun it is possible to use lists of processes
-
 (defmethod! build-array ((components list))
             :icon '(264)
             (let* ((newarray (make-instance (type-of (comp-array (first components)))
@@ -101,21 +98,30 @@
                                                                                (list (nth (1- i) timesdata) (nth i timesdata))))))
                                slotvals))
 
-                   ; c) for score objects
-                   (slotvals (if (print (eql (type-of slotvals) 'chord-seq))
-                                 (loop for i from 1 to (print (1- (length timesdata))) collect
+                   ; c) for chord-seq objects
+                   (slotvals (if (eql (type-of slotvals) 'chord-seq)
+                                 (loop for i from 1 to (1- (length timesdata)) collect
                                        (select slotvals (* 1000 (nth (1- i) timesdata)) (* 1000 (nth i timesdata))))
-                               slotvals))                                                    
+                               slotvals))    
 
-                   (newdata (print (list slotname (list slotvals))))
-                   (finaldata (print (if (integerp index)
+                   ; d) for voice object -doesn't work yet for some reason
+                   (slotvals (if (eql (type-of slotvals) 'voice)
+                                 (let* ((theseq (make-instance 'chord-seq))
+                                        (myseq  (objfromobjs slotvals theseq)))
+                                   (loop for i from 1 to (1- (length timesdata)) collect
+                                         (select myseq (* 1000 (nth (1- i) timesdata)) (* 1000 (nth i timesdata)))))
+                               slotvals))
+                   
+                   (newdata (list slotname (list (print slotvals))))
+                   (finaldata (if (integerp index)
                                   (flat (interlock labeldata (list newdata) (list! index)) 1)
-                              (x-append (flat labeldata 1) slotname (list slotvals))))))
+                                (x-append (flat labeldata 1) slotname (list slotvals)))))
               ;(print labeldata)
               ;(print timesdata)
               ;(print finaldata)
               (set-array (type-of self) (times self) finaldata)
               ))
+
 
 (defmethod! add-row ((self class-array) (slotname list) (slotvals list) &optional index)
             ;(print "it's me")
@@ -154,7 +160,8 @@
 
 #| 
 ; can't get it to output the modified 'newarray'
-(defmethod! add-column ((self gesture-model) (column list) &optional index)
+(defmethod! add-column ((self gesture-model) (column list) &optional index);;make methods for lists of processes!
+; I think for the chroma user-fun it is possible to use lists of processes
             :icon '(264)
             (let* ((newarray (clone self))
                    (newcomp (new-comp column))
@@ -248,8 +255,11 @@ If <pos> is not specified, the component is added at the end of the array."
 
 (defmethod! get-column ((array class-array) (column number))
             :icon 322
-            (comp-list (get-comp array column))
-            )
+            (if (>= column (print (numcols array)))
+                (om-beep-msg (format nil "Column ~D does not exist." column))
+              (comp-list (get-comp array column))
+              ))
+
 
 (defmethod! get-column ((array class-array) (column list))
             (mapcar (lambda (x) (get-column array x)) column)
@@ -258,8 +268,11 @@ If <pos> is not specified, the component is added at the end of the array."
 
 (defmethod! get-row ((array class-array) (row number))
             :icon 323
-            (nth row (data array))
-            )
+            (let ((data (data array)))
+              (if (>= row (length data))
+                  (om-beep-msg (format nil "Row ~D does not exist." row))
+                (nth row data))
+              ))
 
 (defmethod! get-row ((array class-array) (row list))
             (mapcar (lambda (x) (get-row array x)) row)
@@ -534,7 +547,8 @@ If <pos> is not specified, the component is added at the end of the array."
                 (remove-comp self)
               thevalue)
             ))
-
+;;make methods for lists of processes!
+; I think for the chroma user-fun it is possible to use lists of processes
 (defmethod! comp-bandfilter ((self component) (slotname string) (minval string) (maxval string))
             :icon 04
             (let ((thevalue (comp-field self slotname)))
@@ -904,7 +918,8 @@ If <pos> is not specified, the component is added at the end of the array."
             :icon '(323)
             :initvals '(nil nil)
             :numouts 2
-            :outdoc '("array" "list of components")
+            :outdoc '("array" "list of components");;make methods for lists of processes!
+; I think for the chroma user-fun it is possible to use lists of processes
             (values (first self) (second self))
             )
 
@@ -957,3 +972,6 @@ If <pos> is not specified, the component is added at the end of the array."
         collect
         (equal item otheritem)
         ))
+
+;;make methods for lists of processes!
+; I think for the chroma user-fun it is possible to use lists of processes
