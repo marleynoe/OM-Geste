@@ -24,9 +24,11 @@
 ;;make methods for lists of processes!
 
 
-; To do: 1) needs to work with other classes (not only temporalboxes), 2) need a map-column, map-row? function (where the lambda patch can see the entire picture)
-; if I want to have dynamic mappins I need to be able to see the entire model or at least slot. -> not if this is already introduced in the model
-; should have also the inputs named
+; Notes: 
+; 1) Needs a map-column, map-row function (where the lambda patch can see the entire picture)?
+; 2) if I want to have dynamic mappins I need to be able to see the entire model or at least slot
+; 3) -> not if this is already introduced in the model
+; 4) should have also the inputs named
 
 (defmethod! map-gesture ((self gesture-model) mapping-fun object)
             :icon 02        
@@ -45,49 +47,13 @@
                          ;(input-names (print (mapcar #'(lambda (out) 
                          ;                   (intern (frame-name out) :om))
                          ;               (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
-                         ;(names (mapcar #'(lambda (out) 
-                         ;                   (frame-name out))
-                         ;               (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
                          
                          (names (mapcar #'(lambda (out) 
                                             (intern (string-upcase (frame-name out)) :om))
                                         (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
-                        ; (names (mapcar #'(lambda (out) 
-                         ;                   (intern (frame-name out) :om))
-                          ;              (sort (find-class-boxes (boxes mapping-fun) 'omout) '< :key 'indice)))
                          (slots (list names vals))
                          (transslots (mat-trans (list names vals))))
                     
-
-                        ; (slots2 (print (list names vals)))                        
-                        ; (slots (print '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))))
-                    
-                    ;(print (type-of (caar slots2)))
-                    ;(print (type-of (caar slots)))                       
-
-                    ; for now make it work with chords / notes
-                  #|       
-                    (if (subtypep (type-of object) 'class-array)
-                        ;(let ((prep-slots (values (flat (loop for item in slots collect
-                        ;                        (x-append (print (intern (string-upcase (car item)) :keyword)
-                        ;                                         (cdr item))))))))
-                       ; (let ((testlist (cons :numcols 15 :e-dels '(1 2 3 4 5))))
-
-                        ; it can be solved by sorting out from lists etc. - but it would be better to find a solution for make-instance.
-
-                        (let ((filteredslots (loop for item in transslots unless (string-equal (string-upcase (print (car item))) "numcols") collect 
-                                                   item))
-                              (numcols (loop for item in transslots when (string-equal (string-upcase (print (car item))) "numcols") collect 
-                                                   item)));
-
-                                                   ;this should be done by appending into a variable
-
-                                                   ;(table-filter  #'(lambda (x) (eql (string-upcase x) 'numcols)) (print item) 0 'reject))))
-                          (print filteredslots)
-                          (print residue)
-                          ))
-|#
-
                     (let* ((actiontimes nil)
                            (numcols nil)
                            (filteredslots nil))
@@ -99,109 +65,22 @@
                       ;(print actiontimes)
                       ;(print numcols)
                       ;(print filteredslots)
-
                     (if (subtypep (type-of object) 'class-array)
                         (set-array-2 (type-of object) (second numcols) (second actiontimes) filteredslots)
-                      (thelooper obj-instance (car slots) (cadr slots))
+                      (set-class-slots obj-instance (car slots) (cadr slots))
                       )))))
 
 
+; **** HELPER FUNCTIONS ****
 
-
-
-
-                       ; (set-array2 (type-of object) 10 0 (print (flat transslots 1))))
-                       ;   (make-instance (type-of object) (print testlist))
-                       ; ))
-                        ;(cons-array (first slots) (second slots))
-                      ;)
-
-                        ;(let ((thearray (make-instance (type-of object) (intern (string-upcase "numcols") :keyword) 15)))
-                          ;(setf (slot-value thearray 'numcols) 15)
-                         ; thearray
-                          ;))
-
-                   ; (if (subtypep (type-of object) 'class-array)
-                   ;     (let ((theinstance (make-instance (type-of object))))
-                    ;      (loop for item in (flat slots
-                        ;(set-array (type-of object) 10 (flat slots))(eql 'this 'this)
-
-
-                   ;     (make-instance (type-of object) (flat slots))
-                   ;   )
-                  ;    (
-                   ;(loop for item in (print slots) do
-                    ;(print (car slots))
-
-                    ; Try this function "thelooper" with 'slots' and 'slots2' : one works the other doesn't (symbols are different??)
-                    ; (thelooper obj-instance (car slots2) (cadr slots2))
-                    
-                    #|
-                    (loop for item in (print slots) do                       
-                          
-                          (if (is-om-slot? (type-of obj-instance) (car item))
-                              (om-beep-msg (format nil "Error: slot ~A does not exist in class ~A !" (car item) (type-of object)))
-                              ))
-                    |#
-                    ;)
-                    ;obj-instance
-                    ;))
-
-
-#|
-(setf testlist '((initarg1 1) ('initarg2 2) ('initarg3 '(a b))))
-
-(type-of (caar '((initarg1 1) ('initarg2 2) ('initarg3 '(a b)))))
-
-(string-equal (string-upcase 'lmidic) "LMIDIC")
-
-(print (values-list '(:numcols 15 :e-dels '(1 2 3 4 5))))
-
-(print (intern (string-upcase "numcols") :keyword) 15)
-
-(multiple-value-bind (:numcols 15 :e-dels '(1 2 3 4 5)))
-
-(intern (string-upcase "lmdidc") :keyword)
-
-;(make-instance 'chord (intern (string-upcase "lmdidc") :keyword) '(200 400 600))
-
-;(make-instance (type-of object) (intern (string-upcase slotname) :keyword)
-
-|#
-    
-
-#|
-;some tests
-; how can I set the slots of score-objects (chord, chord-seq, voice, etc.) upon instantiation?
-; "do-initialize" might be a possibility
-
-(setf thetestlist '((lmidic loffset) ((6943 5380 6860 6642 5287) 1.3)))
-(setf thetestclass (make-instance 'chord))
-(thelooper thetestclass (car thetestlist) (cadr thetestlist))
-|#
-
-(defun thelooper (class slotlist valuelist)
+(defun set-class-slots (class slotlist valuelist)
   (loop for slot in slotlist
         for value in valuelist do
-        (set-class-slot class slot value)
-        ;(setf (slot class) value)
+        (set-one-slot class slot value)
         )
   class)
 
-#|
-(defun set-class-slot (class slot value)
-  (funcall (fdefinition `(setf ,slot)) value class))
-
-(defun set-class-slot (object slot value)
-  (funcall (fdefinition `(setf ,slot ,object)) value)
-  )
-|#
-
-;(defun set-class-slot (object slot value)
-;  (eval `(setf (,slot ,object) value))
-;  )
-
-(defun set-class-slot (class slot value)
+(defun set-one-slot (class slot value)
     (funcall (fdefinition `(setf ,slot)) value class))
 
 ; syntactic sugar for "removealltemporalboxes"
