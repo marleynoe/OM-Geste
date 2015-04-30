@@ -28,28 +28,29 @@
  
 
 (defmethod! segment-gesture ((self gesture-array) (times list))
-
             :icon 262
             :initvals '(nil nil)
             :indoc '("a gesture-array or gesture-model" "a list of times (in seconds) defining temporal segments")
-            :numouts 1
-           
-            (let ((descriptors (loop for str in (streams self) collect (second (sdif-info str))))
+            :numouts 1           
+            (let* ((descriptors (loop for str in (streams self) collect (second (sdif-info str))))
                   (segment-data (loop for segment on times
                                       for i = 1  then (+ i 1)
                                       while (cdr segment) collect
                                       (let ((t1 (car segment))
                                             (t2 (cadr segment))
                                             (t3 (print (format nil "Processing segment ~D: sec ~D to sec ~D." i (car segment) (cadr segment)))))
-                                        (loop for str in (streams self) append
-                                              (loop for substr in (substreams str) 
-                                                    collect (make-segmented-object 
-                                                             (valuelists substr)
-                                                             (mapcar #'(lambda (x) (coerce x 'single-float)) (timelist str))
-                                                             t1 t2)
+                                        (loop for str in (streams self) 
+                                              for i = 1 then (+ i 1) append
+                                              (loop for substr in (substreams str) collect
+                                                    (progn
+                                                      (print (format nil "segment-gesture: processing stream # ~D: ~a" i (nth (1- i) descriptors)))
+                                                      (make-segmented-object 
+                                                       (valuelists substr)
+                                                       (mapcar #'(lambda (x) (coerce x 'single-float)) (timelist str))
+                                                       t1 t2))
                                                     ))
-                                        ))))
-              
+                                        ))
+                                ))            
               (let ((timearray 
                      (cons-array (make-instance 'time-array :times times) 
                                  (list nil times)
@@ -61,7 +62,6 @@
                 timearray
                 )))
 
-; what is descriptors? the descriptor names
 (defmethod! segment-gesture ((self gesture-model) (times list))
             (let* ((gesture-data (data self))
                    (descriptors (loop for row from 0 to (1- (length gesture-data)) collect (index2label self row)))
@@ -74,9 +74,9 @@
                                              (t2 (cadr segment))
                                              (t3 (print (format nil "segment-gesture: processing segment ~D: sec ~D to sec ~D." i (car segment) (cadr segment)))))
                                          (loop for row in concat-data 
-                                               for i from 1 to (length concat-data) collect; each str is ((datalist) timelist)                                           
+                                               for i = 1 then (+ i 1) collect; each str is ((datalist) timelist)                                           
                                                (progn
-                                                 (print (format nil "segment-gesture: processing row #: ~D" i))
+                                                 (print (format nil "segment-gesture: processing row # ~D: ~a" i (nth (1- i) descriptors)))
                                                  (make-segmented-object (first row) (second row) t1 t2)))
                                          ))))
               
@@ -91,11 +91,11 @@
                 timearray
                 )))
 
-(defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
-  ;datalists contains list of lists values ((xxx) (yyy) (zzz))
-  ;timelist contains a list of values
-  ;(print (format nil "Length of datalist: ~D" (length datalists)))
-  ;(print (format nil "Length of datalist sublist: ~D" (length (car datalists))))
+(defmethod make-segmented-object ((self list) timelist t1 t2 &optional (decimals 10))
+  ;self is a list of lists values ((xxx) (yyy) (zzz))
+  ;timelist is a list of values
+  ;(print (format nil "Length of datalist: ~D" (length self)))
+  ;(print (format nil "Length of datalist sublist: ~D" (length (car self))))
   ;(print (format nil "Length of timelist: ~D" (length timelist)))  
   (let ((pos1 (position t1 timelist :test '<))
         (pos2 (position t2 timelist :from-end t :test '>)))
@@ -106,41 +106,38 @@
                                          (list (list pos1 pos2)) 'pass)
                            (list t2))) ;last timepoint of segment
 
-            (data (mapcar #'(lambda (d) ; do on every sublist in datalists:
+            (data (mapcar #'(lambda (d) ; do on every sublist in self:
                                (append  
                                 (list (x-transfer (mat-trans (list timelist d)) t1))   ; get first timepoint of segment via x-transfer
                                 (range-filter d (list (list pos1 pos2)) 'pass)         ; grab elements of the sublist which are within pos1 pos2
                                 (list (x-transfer (mat-trans (list timelist d)) t2)))) ; git last timepoint of segment via x-transfer 
-                           datalists))) 
+                           self))) 
  
-    ;(print (length datalists))
+    ;(print (length self))
         ; HERE OUR ASSUMPTIONS: 1-dimension = bpf, 2-dimensional = trajectory with z=0, 3-dimensional = trajectory, 
     (cond (
-           (= (length datalists) 1)
+           (= (length self) 1)
            (simple-bpf-from-list times (first data) 'bpf decimals))
-          ((= (length datalists) 2)
+          ((= (length self) 2)
            (traject-from-list (first data) (second data) nil times '3D-trajectory decimals))
-          ((= (length datalists) 3) 
+          ((= (length self) 3) 
            (traject-from-list (first data) (second data) (third data) times '3D-trajectory decimals))
           )
     ))))
 
+(defmethod make-segmented-object ((self sound) timelist t1 t2 &optional (decimals 10))
+  (sox-process self (sox-trim t1 t2) :output "new file")                                                                         
+  )
+
+(defmethod make-segmented-object ((self chord-seq) timelist t1 t2 &optional (decimals 10))
+  (select self (round (* t1 1000)) (round (* t2 1000)))                                                                         
+  )
 
 ; NEEDS A METHOD for (gesture-model): re-segmenting 
 ; --> requires concatenating bpfs, 3DCs etc. and segmenting them again. 
 
 
 ; *** HELPER FUNCTIONS ****
-
-; method for what?
-(defmethod! concat+pointlist ((self list))
-            (let ((valuelist)
-                  (timeslist (cond ((eql (type-
-              
-              (loop for item in self do
-                    (setf valuelist (append valuelist (point-pairs item)))
-                    )
-              valuelist))
 
 (defmethod! get-valuelists ((self bpf))
             (let ((timelist (x-points self))
@@ -154,12 +151,16 @@
               (list datalist timelist)
               ))
 
+;(defmethod! get-valuelists ((self sound))
+;            (list self nil)
+;              )
+
 (defmethod! concat-valuelists ((self list))
             (let ((valueslist)
                   (timeslist))
               (loop for item in self do
                     (let ((data (get-valuelists item))) ;data is a list containing '(((xxx) (yyy) (zzz)) times)
-                      (cond ((eql (type-of item) 'bpf) ; could add as another case audio files and score files
+                      (cond ((eql (type-of item) 'bpf) ; could add as another case audio files and score files (to concatenate them)
                              (progn
                                (setf valueslist (append valueslist (first data))) ; maybe caar?
                                (setf timeslist (append timeslist (second data)))))
@@ -174,17 +175,8 @@
               (list valueslist timeslist)))
                                                        
                                                        
-
-; I want: valuelist and timelist
-            
-
-
 ; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio! and score objects.
-; Need to find a way to make temporal selections (extraction from the gesture model)
-; a) means to re-segment the model and extract a component
-; b) could have a function that merges the data together and then segments it and returns the object, for example. (A bit like the gesture-array - time range) 
-
-;datalists is a row of the matrix (instance) of lists (parameters)
+; datalists is a row of the matrix (instance) of lists (parameters)
 
 ; here we choose to create objects solely based on the dimensionality of the data. This assumption is probably not always a good choice. 
 ; Instead, could be based on the matrix type inside the SDIF (implicit)? Or in an NVT an entry for "separable" or "integral"?
@@ -194,29 +186,3 @@
 
 ; this function works only for temporal objects (i.e. objects that have a timelist)
 ; this is for a gesture stream 
-
-(defmethod make-segmented-object (datalists timelist t1 t2 &optional (decimals 10))
-  (let ((pos1 (position t1 timelist :test '<))
-        (pos2 (position t2 timelist :from-end t :test '>)))
-    (when (and pos1 pos2)
-      (let ((times (append (list t1) 
-                           (range-filter timelist 
-                                         (list (list pos1 pos2)) 'pass)
-                           (list t2)))
-            (data (mapcar #'(lambda (d) 
-                               (append (list (x-transfer (mat-trans (list timelist d)) t1)) 
-                                       (range-filter d (list (list pos1 pos2)) 'pass)
-                                       (list (x-transfer (mat-trans (list timelist d)) t2))))
-                           datalists)))
- 
-    ;(print (length datalists))
-        ; HERE OUR ASSUMPTIONS: 1-dimension = bpf, 2-dimensional = trajectory with z=0, 3-dimensional = trajectory, 
-    (cond (
-           (= (length datalists) 1)
-           (simple-bpf-from-list times (first data) 'bpf decimals))
-          ((= (length datalists) 2)
-           (traject-from-list (first data) (second data) nil times '3D-trajectory decimals))
-          ((= (length datalists) 3) 
-           (traject-from-list (first data) (second data) (third data) times '3D-trajectory decimals))
-          )
-    ))))
