@@ -107,6 +107,14 @@
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
 
+(defmethod! wma ((self 3d-trajectory) (windowsize number) &optional (recursion 1))
+            (let ((xpoints (wma (x-points self) windowsize recursion))
+                  (ypoints (wma (y-points self) windowsize recursion))
+                  (zpoints (wma (z-points self) windowsize recursion)))
+              (traject-from-list xpoints ypoints zpoints (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
+              ))
+
+
 
 
 ; ******************************************
@@ -150,6 +158,20 @@
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
 
+(defmethod! ema ((self 3dc) (alpha number) &key (recursion 1) mode)
+            (let ((xpoints (ema (x-points self) alpha :recursion recursion :mode mode))
+                  (ypoints (ema (y-points self) alpha :recursion recursion :mode mode))
+                  (zpoints (ema (z-points self) alpha :recursion recursion :mode mode)))
+              (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
+              ))
+
+(defmethod! ema ((self 3d-trajectory) (alpha number) &key (recursion 1) mode)
+            (let ((xpoints (ema (x-points self) alpha :recursion recursion :mode mode))
+                  (ypoints (ema (y-points self) alpha :recursion recursion :mode mode))
+                  (zpoints (ema (z-points self) alpha :recursion recursion :mode mode)))
+              (traject-from-list xpoints ypoints zpoints (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
+              ))
+
 
 ; %%%%%%%%%%%%%%%%%%%%%%
 ; MEDIAN FILTER
@@ -184,6 +206,13 @@
                   (ypoints (smm (y-points self) windowsize recursion))
                   (zpoints (smm (z-points self) windowsize recursion)))
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
+              ))
+
+(defmethod! smm ((self 3d-trajectory) (windowsize number) &optional (recursion 1))
+            (let ((xpoints (smm (x-points self) windowsize recursion))
+                  (ypoints (smm (y-points self) windowsize recursion))
+                  (zpoints (smm (z-points self) windowsize recursion)))
+              (traject-from-list xpoints ypoints zpoints (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
               ))
 
 
