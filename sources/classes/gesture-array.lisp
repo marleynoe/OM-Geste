@@ -56,7 +56,7 @@
    (declare (ignore initargs)) 
    (when (datasrc self)
      (let* ((stream-preinfo (sdifinfo (datasrc self) nil))
-            ;(stream-info (table-filter (lambda member something) (streams self) 0 pass)) ;this would be more elegant than the loop-in-a-loop
+;(stream-info (table-filter (lambda member something) (streams self) 0 pass)) ;this would be more elegant than the loop-in-a-loop
             (stream-info (flat (loop 
                                 for tstr in (streams self) collect
                                 (remove nil (loop
@@ -85,3 +85,92 @@
        ))
    self)
 
+
+; Here the new version
+
+(defmethod initialize-instance :after ((self gesture-array) &rest initargs) 
+   (declare (ignore initargs)) 
+   (when (datasrc self)
+     (let* ((stream-preinfo (sdifinfo (datasrc self) nil))
+            (streamsandtime (when (or (not (timerange self)) (not (streams self))) (SDIFstreams+timerange (datasrc self))))
+            (timerange (or (timerange self) (list (second streamsandtime) (third streamsandtime))))
+            (streams (or (streams self) (first streamsandtime)))
+;(stream-info (table-filter (lambda member something) (streams self) 0 pass)) ;this would be more elegant than the loop-in-a-loop
+            (stream-info (flat (loop 
+                                for tstr in streams collect
+                                (remove nil (loop
+                                             for pstr in stream-preinfo collect
+                                             (if (equal (car pstr) tstr) pstr)
+                                             ))) 1)
+                         ))
+       (when (not (timerange self)) (setf (timerange self) (list (second streamsandtime) (third streamsandtime))))
+       (setf (streams self) (loop for str in stream-info collect
+ 
+                                  (multiple-value-bind (data times) 
+                                      ;             SDIFFILE       StreamID Frametype  Matrixtype  field row1 row2   time1                    time2
+                                      (getsdifdata (datasrc self) (car str) (cadr str) (caddr str) nil   nil  nil    (first timerange) (second timerange))
+
+                                    ;this is a gesture stream ------------------
+                                    ;(print (length (mat-trans data)))
+                                    (make-instance 'gesture-stream
+                                                                    ;StreamID Frametype  Matrixtype
+                                                   :sdif-info (list (car str) (cadr str) (caddr str))
+                                                   :timelist times
+                                                   :substreams (loop for sbstr in (mapcar #'mat-trans (mat-trans data)) collect
+                                                                      (make-instance 'gesture-substream 
+                                                                                    :valuelists sbstr)))
+                                    ;this is a gesture stream ------------------
+                                    ))
+             )
+       ))
+   self)
+
+
+
+
+
+;SDIFtimeandstreams
+(defmethod! SDIFstreams+timerange ((self sdifFile) &optional (print t))
+   :icon 639
+   :doc "Prints information about the SDIF data in <self>.
+Returns a list of lists in which the first is the stream numbers in the file, the second the min and max time of any frame.
+"
+   :indoc '("SDIF file")
+   (when print 
+     (format *om-stream* "----------------------------------------------------------~%")
+     (format *om-stream*  "Creating gesture streams for file: ~D~%"  (pathname-name (filepathname self)))
+     (format *om-stream* "----------------------------------------------------------~%"))
+   (let ((streams nil)
+         (minmaxtimes nil)
+         (streamlist nil))
+     (loop for fr in (framesdesc self) do
+           (let ((pos (position fr streams :test #'(lambda (frame1 frame2) (and (string-equal (car frame1) (car frame2))
+                                                                         (= (third frame1) (third frame2))))
+                                :key 'car)))
+             (if pos (setf (nth pos streams) (append (nth pos streams) (list fr)))
+               (setf streams (append streams (list (list fr)))))))
+   
+   (when print 
+     (format *om-stream*  "NUMBER OF SDIF STREAMS: ~D~%~%" (length streams)))
+   (loop for st in streams do
+      (let* ((times (mapcar 'cadr st))
+             (min-time (list-min times))
+             (max-time (list-max times))             
+             ;(matrices (remove-duplicates (mapcar 'car (flat (mapcar 'fifth st) 1)) :test 'string-equal)))
+             (streams nil))
+        (when print 
+          (format *om-stream*  "      Matrices :  ")
+          (format *om-stream*  "   STREAM ID ~D - ~D Frames type = ~A ~%"  (third (car st)) (length st) (car (car st)))
+          (format *om-stream*  "      Tmin= ~D   -   Tmax= ~D~%"  min-time max-time)
+          (setf minmaxtimes (push (list min-time max-time) minmaxtimes))
+          (setf streamlist (push (third (car st)) streamlist))
+          )
+         ))
+   (let* ((transtimes (mat-trans minmaxtimes))
+          (global-tmin (list-min (first transtimes)))
+          (global-tmax (list-max (second transtimes))))
+     (format *om-stream*  "~%Global Tmin= ~D" global-tmin)
+     (format *om-stream*  "~%Global Tmax= ~D~%~%"  global-tmax)
+   (list (sort-list streamlist) global-tmin global-tmax)
+   )
+   ))

@@ -96,3 +96,7 @@
             :icon '(335)
             (cadr (find name descriptor :test 'string-equal :key 'car)))
 
+(defmethod! segment-dur (times)
+            (- (car (last times)) (car times))
+            )
+

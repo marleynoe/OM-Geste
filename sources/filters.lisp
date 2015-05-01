@@ -223,7 +223,7 @@ if <resample> is a decimal it is a factor of the points in the original curve."
                     self))
 
 ; temporary method/trick to be able to have b-spline work with 3d-trajectories
-(defmethod! b-spline ((self 3d-trajectory) &key (order 3) resample (mode lowpass))
+(defmethod! b-spline ((self 3d-trajectory) &key (order 3) resample (mode 'lowpass))
             (let* (;(the3DC (3dc-from-list (x-points self) (y-points self) (print (z-points self)) '3dc (decimals self))) ; probbaly not required 
                    (numpoints (cond ((integerp resample) resample)
                                     ((floatp resample) (round (* resample (length (point-pairs self)))))

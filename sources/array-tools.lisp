@@ -63,7 +63,9 @@
 ; slotvals should be called 'data'
 ; **** MATRIX MANIPULATIONS (adding and removing rows and columns) ********
 ; could have an optional inlet to choose spectrogram vs audio file
-; need to add method for voice objects
+
+; when there is an index, it's correct otherwise, one level of parentheses must be added
+
 (defmethod! add-row ((self class-array) (slotname string) (slotvals t) &optional index) 
             :icon 266
             (let* ((arraydata (data self))
@@ -112,7 +114,7 @@
                                          (select myseq (* 1000 (nth (1- i) timesdata)) (* 1000 (nth i timesdata)))))
                                slotvals))
                    
-                   (newdata (list slotname (list (print slotvals))))
+                   (newdata (list slotname (list slotvals)))
                    (finaldata (if (integerp index)
                                   (flat (interlock labeldata (list newdata) (list! index)) 1)
                                 (x-append (flat labeldata 1) slotname (list slotvals)))))
@@ -133,7 +135,7 @@
             )
 
 (defmethod! remove-row ((self class-array) (slotname string))
-            :icon 267
+            :icon 269
             (let* ((arraydata (data self))
                    (timesdata (times self))
                    (labeldata

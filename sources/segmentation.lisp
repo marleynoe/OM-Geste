@@ -34,7 +34,8 @@
             :numouts 1    
             (print (format nil "Starting segmentation of ~a" self))
             (let* ((descriptors (loop for str in (streams self) collect (second (sdif-info str))))
-                  (segment-data (loop for segment on times
+                   (thetimes (or times (timerange self)))
+                   (segment-data (loop for segment on thetimes
                                       for i = 1  then (+ i 1)
                                       while (cdr segment) collect
                                       (let ((t1 (car segment))
@@ -53,8 +54,8 @@
                                         ))
                                 ))            
               (let ((timearray 
-                     (cons-array (make-instance 'time-array :times times) 
-                                 (list nil times)
+                     (cons-array (make-instance 'time-array :times thetimes) 
+                                 (list nil thetimes)
                                  (loop for row in (mat-trans segment-data)
                                        for j = 0 then (+ j 1)
                                        append (list (internk (nth j descriptors)) row)))))
@@ -159,27 +160,30 @@
 ;            (list self nil)
 ;              )
 
-(defmethod! concat-valuelists ((self list))
-            (let ((valueslist)
-                  (timeslist))
-              (loop for item in self do
-                    (let ((data (get-valuelists item))) ;data is a list containing '(((xxx) (yyy) (zzz)) times)
-                      (cond ((eql (type-of item) 'bpf) ; could add as another case audio files and score files (to concatenate them)
-                             (progn                               
-                               (setf valueslist (list (append (first valueslist) (car (first data)))))
-                               (setf timeslist (append timeslist (second data)))
+(defmethod! concat-valuelists ((self list))         
+            (if (soundp (car self))
+                (list (sox-process (make-instance 'sox-concatenate :sound self)) nil)
+              (let ((valueslist)
+                    (timeslist))
+                (loop for item in self do
+                      (let ((data (get-valuelists item))) ;data is a list containing '(((xxx) (yyy) (zzz)) times)
+                        (cond ((eql (type-of item) 'bpf) ; could add as another case audio files and score files (to concatenate them)
+                               (progn                               
+                                 (setf valueslist (list (append (first valueslist) (car (first data)))))
+                                 (setf timeslist (append timeslist (second data)))
                                ;(print (format nil "length of bpf valueslist: ~D" (length valueslist))))
-                               ))
-                            ((eql (type-of item) '3d-trajectory)
-                             (progn
+                                 ))
+                              ((eql (type-of item) '3d-trajectory)
+                               (progn
                                ;(print (format nil "length of valueslist: ~D" (length valueslist)))
-                               (setf valueslist (list (x-append (first valueslist) (first (car data)))
-                                                      (x-append (second valueslist) (second (car data)))
-                                                      (x-append (third valueslist) (third (car data)))))                               
-                               (setf timeslist (append timeslist (second data)))))
-                            )
-                      ))
-              (list valueslist timeslist)))
+                                 (setf valueslist (list (x-append (first valueslist) (first (car data)))
+                                                        (x-append (second valueslist) (second (car data)))
+                                                        (x-append (third valueslist) (third (car data)))))                               
+                                 (setf timeslist (append timeslist (second data)))))
+                              )
+                        ))
+                (list valueslist timeslist)))
+            )
                                                        
                                                        
 ; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio! and score objects.
