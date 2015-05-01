@@ -31,7 +31,8 @@
             :icon 262
             :initvals '(nil nil)
             :indoc '("a gesture-array or gesture-model" "a list of times (in seconds) defining temporal segments")
-            :numouts 1           
+            :numouts 1    
+            (print (format nil "Starting segmentation of ~a" self))
             (let* ((descriptors (loop for str in (streams self) collect (second (sdif-info str))))
                   (segment-data (loop for segment on times
                                       for i = 1  then (+ i 1)
@@ -59,11 +60,12 @@
                                        append (list (internk (nth j descriptors)) row)))))
                 
                 (set-data timearray)
+                (print (format nil "Segmentation of ~a DONE." self))
                 timearray
                 )))
 
 (defmethod! segment-gesture ((self gesture-model) (times list))
-            (print "Segmenting gesture-model")
+            (print (format nil "Starting segmentation of ~a" self))
             (let* ((gesture-data (data self))
                    (descriptors (loop for row from 0 to (1- (length gesture-data)) collect (index2label self row)))
                    (concat-data (loop for row in gesture-data collect
@@ -73,11 +75,11 @@
                                        while (cdr segment) collect
                                        (let ((t1 (car segment))
                                              (t2 (cadr segment))
-                                             (t3 (print (format nil "segment-gesture: processing segment ~D: sec ~D to sec ~D." i (car segment) (cadr segment)))))
+                                             (t3 (print (format nil "processing segment ~D: sec ~D to sec ~D." i (car segment) (cadr segment)))))
                                          (loop for row in concat-data 
                                                for i = 1 then (+ i 1) collect; each str is ((datalist) timelist)                                           
                                                (progn
-                                                 (print (format nil "segment-gesture: processing row # ~D: ~a" i (nth (1- i) descriptors)))
+                                                 (print (format nil "processing row # ~D: ~a" i (nth (1- i) descriptors)))
                                                  (make-segmented-object (first row) (second row) t1 t2)))
                                          ))))
               
@@ -89,6 +91,7 @@
                                        append (list (internk (nth j descriptors)) row)))))
                 
                 (set-data timearray)
+                (print (format nil "Segmentation of ~a DONE." self))
                 timearray
                 )))
 
@@ -165,7 +168,8 @@
                              (progn                               
                                (setf valueslist (list (append (first valueslist) (car (first data)))))
                                (setf timeslist (append timeslist (second data)))
-                               (print (format nil "length of bpf valueslist: ~D" (length valueslist)))))
+                               ;(print (format nil "length of bpf valueslist: ~D" (length valueslist))))
+                               ))
                             ((eql (type-of item) '3d-trajectory)
                              (progn
                                ;(print (format nil "length of valueslist: ~D" (length valueslist)))
