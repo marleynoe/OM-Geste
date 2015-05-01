@@ -247,15 +247,50 @@
 
 ; summing function
 (defmethod! om-sum ((self list))
-                  (loop for item in self
-                  sum item)
-                  )
+  :initvals '(nil)
+  :icon '(209) 
+  :indoc '("list or bpf or 3DC or 3D-trajectory")
+  :doc "Returns the sum of elements in list."
+  (if (numberp (car self))
+      (loop for item in self
+            sum item)
+    (mapcar (lambda (x) (om-sum x)) self)
+    ))
+
+(defmethod! om-sum ((self bpf))
+            (om-sum (y-points self))
+            )
+
+(defmethod! om-sum ((self 3dc))
+            (om-sum (y-points (magnitude self)))
+            )
+
+(defmethod! om-sum ((self 3d-trajectory))
+            (om-sum (y-points (magnitude self)))
+            )
+
 
 ; squared sum
 (defmethod! om-sum^2 ((self list))
-                  (loop for item in self
+            :initvals '(nil)
+            :icon '(209) 
+            :indoc '("list")
+            :doc "Returns the squared sum of elements in list."
+            (loop for item in self
                   sum (* item item))
-                  )
+            )
+
+(defmethod! om-sum^2 ((self bpf))
+            (om-sum^2 (y-points self))
+            )
+
+(defmethod! om-sum^2 ((self 3dc))
+            (om-sum^2 (y-points (magnitude self)))
+            )
+
+(defmethod! om-sum^2 ((self 3d-trajectory))
+            (om-sum^2 (y-points (magnitude self)))
+            )
 
 ; Need to make the average / arithmetic mean (SimpleArithmeticMean) for vectors.
 ; a defmethod! for lists-of-lists (each sublist being a vector)
@@ -303,7 +338,7 @@
                     (setf thelist (standev thelist bessel))
                     )
                 (setf thelist (mapcar (lambda (vals) (stdev vals bessel windowsize hopsize)) thelist)))
-                thelist)
+              thelist)
             )
 
 (defmethod! stdev ((self bpf) &optional (bessel nil) (windowsize nil) (hopsize 1))
@@ -319,6 +354,13 @@
                   (ypoints (stdev (y-points self) bessel windowsize hopsize))
                   (zpoints (stdev (z-points self) bessel windowsize hopsize)))
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
+              ))
+
+(defmethod! stdev ((self 3d-trajectory) &optional (bessel nil) (windowsize nil) (hopsize 1))
+            (let ((xpoints (list! (stdev (x-points self) bessel windowsize hopsize)))
+                  (ypoints (list! (stdev (y-points self) bessel windowsize hopsize)))
+                  (zpoints (list! (stdev (z-points self) bessel windowsize hopsize))))
+              (traject-from-list xpoints ypoints zpoints (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
               ))
 
 
