@@ -63,6 +63,7 @@
                 )))
 
 (defmethod! segment-gesture ((self gesture-model) (times list))
+            (print "Segmenting gesture-model")
             (let* ((gesture-data (data self))
                    (descriptors (loop for row from 0 to (1- (length gesture-data)) collect (index2label self row)))
                    (concat-data (loop for row in gesture-data collect
@@ -141,8 +142,8 @@
 
 (defmethod! get-valuelists ((self bpf))
             (let ((timelist (x-points self))
-                  (datalist (y-points self)))
-              (list (list datalist) timelist)
+                  (datalist (list (y-points self))))
+              (list datalist timelist)
               ))
 
 (defmethod! get-valuelists ((self 3d-trajectory))
@@ -161,11 +162,13 @@
               (loop for item in self do
                     (let ((data (get-valuelists item))) ;data is a list containing '(((xxx) (yyy) (zzz)) times)
                       (cond ((eql (type-of item) 'bpf) ; could add as another case audio files and score files (to concatenate them)
-                             (progn
-                               (setf valueslist (append valueslist (first data))) ; maybe caar?
-                               (setf timeslist (append timeslist (second data)))))
+                             (progn                               
+                               (setf valueslist (list (append (first valueslist) (car (first data)))))
+                               (setf timeslist (append timeslist (second data)))
+                               (print (format nil "length of bpf valueslist: ~D" (length valueslist)))))
                             ((eql (type-of item) '3d-trajectory)
                              (progn
+                               ;(print (format nil "length of valueslist: ~D" (length valueslist)))
                                (setf valueslist (list (x-append (first valueslist) (first (car data)))
                                                       (x-append (second valueslist) (second (car data)))
                                                       (x-append (third valueslist) (third (car data)))))                               
