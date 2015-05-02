@@ -66,6 +66,7 @@
                     ("Filters" nil nil (slide-filter sma wma ema smm) nil)
                     ("Statistics" nil nil (rms magnitude variance stdev covariance correlation centroid) nil)
                     ("Utilities" nil nil (integrate differentiate find-peaks) nil)
+                    ("Mapping" nil nil (map-gesture get-stream) nil)
                     ("Gesture-Model" nil nil (segment-gesture process-row process-column add-row remove-row get-row get-column get-field) nil)
                     ()
                     )

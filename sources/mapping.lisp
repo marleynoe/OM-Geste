@@ -44,9 +44,9 @@
                                     (loop for slot in thecontrols collect
                                           (list (string (first slot)) (nth col (second slot))))))) ;the function uses this
                          
-                         (input-names (print (mapcar #'(lambda (out) 
-                                            (intern (frame-name out) :om))
-                                        (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
+                         ;(input-names (print (mapcar #'(lambda (out) 
+                         ;                   (intern (frame-name out) :om))
+                         ;               (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
                          
                          (names (mapcar #'(lambda (out) 
                                             (intern (string-upcase (frame-name out)) :om))
@@ -92,11 +92,48 @@
            (removealltemporalboxes self)
            )
 
-(defmethod! gesture-slot (descriptor name)
-            :icon '(335)
-            (cadr (find name descriptor :test 'string-equal :key 'car)))
+(defmethod! get-stream ((matrix-data list) (stream string))
+            :icon 013
+            :initvals '(nil nil)
+            :indoc '("gesture-data" "stream name")
+            (cadr (find stream matrix-data :test 'string-equal :key 'car))
+            )
+
+
+;compat
+(defmethod! gesture-slot (matrix-data stream)
+          (get-stream descriptor name))
 
 (defmethod! segment-dur (times)
+            :icon 021 
             (- (car (last times)) (car times))
             )
 
+
+; **** HELPER ****
+
+(defmethod! om* ((arg1 bpf) (arg2 bpf))
+            (let ((ypoints1 (y-points arg1))
+                  (ypoints2 (y-points arg2))
+                  (xpoints1 (x-points arg1))
+                  (xpoints2 (x-points arg2)))
+              ; (if (length for now assume the length of xpoints is the same for both bpfs
+              (simple-bpf-from-list xpoints1 (om* ypoints1 ypoints2) 'bpf (decimals arg1))
+              ))
+
+(defmethod! om* ((arg1 3d-trajectory) (arg2 bpf))
+            (let ((ypoints1 (y-points arg2)))               
+              ; (if (length for now assume the length of xpoints is the same for both bpfs
+              (traject-from-list  (om* ypoints1 (x-points arg1)) (om* ypoints1 (y-points arg1)) (om* ypoints1 (z-points arg1)) (times arg1) 
+                                  '3d-trajectory (decimals arg1) (sample-params arg1) (interpol-mode arg1))
+              ))
+
+
+(defmethod! om+ ((arg1 bpf) (arg2 bpf))
+            (let ((ypoints1 (y-points arg1))
+                  (ypoints2 (y-points arg2))
+                  (xpoints1 (x-points arg1))
+                  (xpoints2 (x-points arg2)))
+              ; (if (length for now assume the length of xpoints is the same for both bpfs
+              (simple-bpf-from-list xpoints1 (om+ ypoints1 ypoints2) 'bpf (decimals arg1))
+              ))

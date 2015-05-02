@@ -161,7 +161,6 @@
             (sqrt (om* (om/ 1 (length self)) (om-sum^2 self)))
             )
 
-
 (defmethod! rms ((self list) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
             :icon '(631) 
             :initvals '(nil 5)
@@ -181,6 +180,7 @@
                     ))
 
 (defmethod! rms ((self bpf) &optional (windowsize nil) (hopsize 1) (padding 1)) ; padding 0 = no, 1 = first element, 2 = last element, 3 = circular
+            ;(print "here")
             (let* ((thexpoints (if (= hopsize 1) (x-points self) '(1)))
                    (thelist (y-points self))
                    (therootmeansquarelist (if (numberp windowsize)
@@ -194,6 +194,20 @@
               (if (numberp windowsize)
                   (simple-bpf-from-list thexpoints therootmeansquarelist 'bpf (decimals self))
                 therootmeansquarelist)
+              ))
+
+(defmethod! rms ((self 3dc) &optional (windowsize nil) (hopsize 1) (padding 1))
+            (let ((xpoints (rms (x-points self) windowsize hopsize padding))
+                  (ypoints (rms (y-points self) windowsize hopsize padding))
+                  (zpoints (rms (z-points self) windowsize hopsize padding)))
+              (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
+              ))
+
+(defmethod! rms ((self 3d-trajectory) &optional (windowsize nil) (hopsize 1) (padding 1))
+            (let ((xpoints (list! (rms (x-points self) windowsize hopsize padding)))
+                  (ypoints (list! (rms (y-points self) windowsize hopsize padding)))
+                  (zpoints (list! (rms (z-points self) windowsize hopsize padding))))
+              (traject-from-list xpoints ypoints zpoints (times self) '3d-trajectory (decimals self) (sample-params self) (interpol-mode self))
               ))
 
 
@@ -226,24 +240,41 @@
             :doc "calculates the absolute magnitude of an n-dimensional vector."
             (if (numberp (car (list! (car self)))) 
                 (euclidean-distance self offset)
-              (mapcar (lambda (x) (magnitude x offset)) self))
-            )
+              (flat (mapcar (lambda (x) (magnitude x offset)) self))
+            ))
 
 (defmethod! magnitude ((self bpf) &optional (offset 0))              
             (simple-bpf-from-list (x-points self) (euclidean-distance (y-points self) 0) 'bpf (decimals self))
             )
 
 (defmethod! magnitude ((self bpc) &optional (offset 0)) ;when times is not known use 'normalized' stepsize of 1
-            (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
+            (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) offset) 'bpf (decimals self))
             )
 
 (defmethod! magnitude ((self 3dc) &optional (offset 0))              
-            (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
+            (simple-bpf-from-list '(1) (euclidean-distance (point-pairs self) offset) 'bpf (decimals self))
             )
 
-(defmethod! magnitude ((self 3d-trajectory) &optional (offset 0))              
-            (simple-bpf-from-list (times self) (euclidean-distance (point-pairs self) 0) 'bpf (decimals self))
+(defmethod! magnitude ((self 3d-trajectory) &optional (offset 0))
+            (if (> (length (point-pairs self)) 1)
+                (simple-bpf-from-list (times self) (euclidean-distance (point-pairs self) offset) 'bpf (decimals self))
+              (euclidean-distance (point-pairs self) offset))
             )
+
+;get minmax
+(defmethod! minmax ((self list))
+  :initvals '(nil)
+  :icon '(209) 
+  :indoc '("list")
+  :doc "Returns min and max values in list or bpf."
+  :numouts 2
+  (values (list-min self) (list-max self))
+  )
+
+(defmethod! minmax ((self bpf))
+            (let ((ypoints (y-points self)))
+              (values (list-min ypoints) (list-max ypoints))
+              ))
 
 ; summing function
 (defmethod! om-sum ((self list))

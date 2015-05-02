@@ -13,7 +13,7 @@
 ;
 ;See file LICENSE for further informations on licensing terms.
 ;
-;This program is distributed in the hope that it will be useful,
+;This program is distributed in the hope thnameat it will be useful,
 ;but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;GNU General Public License for more details.
@@ -71,6 +71,7 @@
                    (descriptors (loop for row from 0 to (1- (length gesture-data)) collect (index2label self row)))
                    (concat-data (loop for row in gesture-data collect
                                       (concat-valuelists row))) ; (  ( ((xxx) (yyy) (zzz)) times) ( ((xxx) (yyy) (zzz)) times)
+                   (times (or times (list (first (times self)) (car (last (times self))))))
                    (segment-data (loop for segment on times
                                        for i = 1  then (+ i 1)
                                        while (cdr segment) collect
@@ -85,7 +86,7 @@
                                          ))))
               
               (let ((timearray 
-                     (cons-array (make-instance 'time-array :times times) 
+                     (cons-array (make-instance 'gesture-model :times times) 
                                  (list nil times)
                                  (loop for row in (mat-trans segment-data)
                                        for j = 0 then (+ j 1)
@@ -156,6 +157,13 @@
               (list datalist timelist)
               ))
 
+(defmethod! get-valuelists ((self number))
+            (let ((timelist '(1)) ; would need the time of the segment here.
+                  (datalist (list (list self))))
+              (list datalist timelist)
+              ))
+
+
 ;(defmethod! get-valuelists ((self sound))
 ;            (list self nil)
 ;              )
@@ -180,12 +188,19 @@
                                                         (x-append (second valueslist) (second (car data)))
                                                         (x-append (third valueslist) (third (car data)))))                               
                                  (setf timeslist (append timeslist (second data)))))
+                              ((eql (type-of item) 'single-float)
+                               (progn
+                               ;(print (format nil "length of valueslist: ~D" (length valueslist)))
+                                 (setf valueslist (print (list (append (first valueslist) (car (first data))))))                               
+                                 (setf timeslist (print (append timeslist (second data))))))
                               )
                         ))
                 (list valueslist timeslist)))
             )
-                                                       
-                                                       
+             
+
+(equal (type-of 0.5) 'single-float)                                          
+        (type-of 0.5)                                               
 ; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio! and score objects.
 ; datalists is a row of the matrix (instance) of lists (parameters)
 

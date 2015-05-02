@@ -868,8 +868,8 @@ If <pos> is not specified, the component is added at the end of the array."
     array)
   )
 
-(defun set-array2 (type numcols action-time params)
-  (let ((array (cons-array (make-instance type) (list nil numcols action-time nil) params)))
+(defun set-array-2 (type numcols action-time params)
+  (let ((array (cons-array (make-instance type) (list nil (or numcols 1) (or action-time 0) nil) params)))
     (set-data array)
     array)
   )
