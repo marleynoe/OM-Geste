@@ -41,9 +41,16 @@
                           (multiple-value-list 
                            (funcall (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
                                     
-                                    (loop for slot in thecontrols collect
-                                          (list (string (first slot)) (nth col (second slot))))))) ;the function uses this
+                                    ;(loop for slot in thecontrols collect
+                                    ;      (list (string (first slot)) (nth col (list! (second slot)))))))) ;the function uses this
                          
+                                    (loop for slot in thecontrols collect
+                                          (if (and (not (listp (second slot))) (eql (type-of (second slot)) 'bpf))
+                                              (let ((sampledval (nth col (third (multiple-value-list (om-sample (second slot) (numcols self)))))))
+                                                (list (string (first slot)) sampledval))
+                                            (list (string (first slot)) (nth col (second slot))))
+                                          ))))
+
                          ;(input-names (print (mapcar #'(lambda (out) 
                          ;                   (intern (frame-name out) :om))
                          ;               (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
@@ -92,17 +99,26 @@
            (removealltemporalboxes self)
            )
 
-(defmethod! get-stream ((matrix-data list) (stream string))
+(defmethod! om-sample ((self 3d-trajectory) (nbs-sr number) &optional xmin xmax dec)
+ (let* ((traj self)
+        (sampledxpoints (third (multiple-value-list (om-sample (x-points traj) nbs-sr xmin xmax dec))))
+        (sampledypoints (third (multiple-value-list (om-sample (y-points traj) nbs-sr xmin xmax dec))))
+        (sampledzpoints (third (multiple-value-list (om-sample (z-points traj) nbs-sr xmin xmax dec))))
+        (sampledtimepoints (third (multiple-value-list (om-sample (times traj) nbs-sr xmin xmax dec)))))
+   (traject-from-list sampledxpoints sampledypoints sampledzpoints sampledtimepoints '3d-trajectory (decimals traj) (sample-params traj) (interpol-mode traj))
+   ))
+
+; **** get data from gesture matrix ***
+(defmethod! get-stream ((matrix-data list) (stream symbol))
             :icon 013
             :initvals '(nil nil)
             :indoc '("gesture-data" "stream name")
             (cadr (find stream matrix-data :test 'string-equal :key 'car))
             )
 
-
 ;compat
 (defmethod! gesture-slot (matrix-data stream)
-          (get-stream descriptor name))
+          (get-stream matrix-data stream))
 
 (defmethod! segment-dur (times)
             :icon 021 
@@ -111,6 +127,11 @@
 
 
 ; **** HELPER ****
+
+(defmethod! om* ((arg1 bpf) (arg2 number))
+              ; (if (length for now assume the length of xpoints is the same for both bpfs
+              (simple-bpf-from-list (x-points arg1) (om* (y-points arg1) arg2) 'bpf (decimals arg1))
+              )
 
 (defmethod! om* ((arg1 bpf) (arg2 bpf))
             (let ((ypoints1 (y-points arg1))
