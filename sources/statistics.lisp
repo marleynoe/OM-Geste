@@ -326,9 +326,18 @@
 ; Need to make the average / arithmetic mean (SimpleArithmeticMean) for vectors.
 ; a defmethod! for lists-of-lists (each sublist being a vector)
 
-(defun mean (list)
-  (/ (om-sum list) (length list))
-  )
+(defmethod! arith-mean ((self list))
+            :icon '(631)
+            :initvals '(nil nil nil 1)
+            :indoc '("a list, bpf, 3dc, 3d-trajectory")
+            :numouts 1
+            :doc "calculates the average"            
+            (/ (om-sum self) (length self))
+            )
+
+(defmethod! arith-mean ((self bpf))
+            (arith-mean (y-points self))
+            )
 
 
 ; variance / sample variance
