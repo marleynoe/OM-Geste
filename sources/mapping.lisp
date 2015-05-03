@@ -77,6 +77,12 @@
                       (set-class-slots obj-instance (car slots) (cadr slots))
                       )))))
 
+#| better:
+(apply #'make-instance 'myclass
+       (loop for (parameter value) in '((initarg1 1) (initarg2 2) (initarg3 '(a b)))
+             collect (intern (symbol-name parameter) (find-package :keyword))
+             collect value))
+|#
 
 ; **** HELPER FUNCTIONS ****
 

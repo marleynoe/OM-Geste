@@ -64,7 +64,7 @@
 ; **** MATRIX MANIPULATIONS (adding and removing rows and columns) ********
 ; could have an optional inlet to choose spectrogram vs audio file
 
-(defmethod! add-row ((self class-array) (slotname string) (slotvals t) &optional index) 
+(defmethod! add-row ((self class-array) (slotname string) (slotvals t) &key index sonagram) 
             :icon 266
             (let* ((arraydata (data self))
                    (timesdata (times self))
@@ -84,7 +84,7 @@
                    ; a)
                    ;(slotvals (if (soundp slotvals)
                    ;              (mapcar (lambda (x) (sox-spectrogram x nil 1)) 
-                   ;                      (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
+                   ;                     (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
                    ;                                                    (loop for i from 1 to (1- (length timesdata)) collect
                    ;                                                          (list (nth (1- i) timesdata) (nth i timesdata)))) :output "pipe"))
                    ;          slotvals))    
@@ -92,10 +92,15 @@
                  
                    ; b)
                    (slotvals (if (soundp slotvals)
-                                 (mapcar (lambda (x) (make-instance 'sound :filename x))
+                                 (if sonagram
+                                     (mapcar (lambda (x) (sox-spectrogram x nil 1)) 
+                                        (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
+                                                                       (loop for i from 1 to (1- (length timesdata)) collect
+                                                                             (list (nth (1- i) timesdata) (nth i timesdata)))) :output "pipe"))
+                                   (mapcar (lambda (x) (make-instance 'sound :filename x))
                                            (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
                                                                          (loop for i from 1 to (1- (length timesdata)) collect
-                                                                               (list (nth (1- i) timesdata) (nth i timesdata))))))
+                                                                               (list (nth (1- i) timesdata) (nth i timesdata)))))))
                                slotvals))
 
                    ; c) for chord-seq objects
@@ -123,11 +128,10 @@
               ))
 
 
-(defmethod! add-row ((self class-array) (slotname list) (slotvals list) &optional index)
-            ;(print "it's me")
+(defmethod! add-row ((self class-array) (slotname list) (slotvals list) &key index sonagram)
             (let ((themodel self))
               (if (car (list! index))
-                  (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val i))) slotname slotvals index)
+                  (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val :index i))) slotname slotvals index)
                 (mapc (lambda (slot val) (setf themodel (add-row themodel slot val))) slotname slotvals))
               themodel)
             )
@@ -204,7 +208,7 @@ If <pos> is not specified, the component is added at the end of the array."
           (pos (or position (numcols newarray))))
      (setf (comp-array comp) newarray)
      (setf (index comp) pos)
-     (add-array-col newarray pos (val-list comp))
+     (add-array-col newarray pos (val-list comp))15
      (loop for cmp in (attached-components newarray) do
            (when (>= (index cmp) pos)
              (setf (index cmp) (1+ (index cmp)))))
@@ -350,7 +354,7 @@ If <pos> is not specified, the component is added at the end of the array."
 ; process-rows should process all the rows, i.e. supply the rows one by one and have an optional input to choose the row i.e. descriptor. If nil returns all rows one by one
 
 (defmethod! process-rows ((process t) (array class-array))
-            :icon '(264)
+            :icon 273; '(264)
             (let ((thearray (clone array)))
                     (apply process (list thearray))
             thearray
@@ -373,7 +377,7 @@ If <pos> is not specified, the component is added at the end of the array."
 
 
 (defmethod! process-columns ((process t) (array class-array))
-            :icon '(264)
+            :icon 272; '(264)
             (let* ((thearray (clone array))
                    (complist (loop for i from 0 to (1- (numcols thearray))
                                    collect (get-comp thearray i))))
@@ -433,7 +437,7 @@ If <pos> is not specified, the component is added at the end of the array."
 
 ; 'slotname' arg should become 'row'
 (defmethod! process-row ((process t) (slotname string) (array class-array) &optional rowname)
-            :icon '(264)
+            :icon 273 ;'(264)
             (let* ((thearray (clone array))
                    ;later I should use symbol-function...
                   ;(theslotvalues (symbol-function slotname)) 
@@ -503,7 +507,7 @@ If <pos> is not specified, the component is added at the end of the array."
 
 
 (defmethod! process-column ((process t) (index integer) (array class-array))
-            :icon '(264)
+            :icon 272 ;'(264)
             (let* ((thearray (clone array))
                    ;(complist (loop for i from 0 to (1- (numcols thearray))
                    ;                collect (get-comp thearray i))))
@@ -755,7 +759,7 @@ If <pos> is not specified, the component is added at the end of the array."
                     do
                     (if (> (abs delta) maxdelta)
                         (remove-comp comp)
-                      comp)
+                      comp)15
                     )
                 (loop for delta in deltalist
                       for comp in thecomplist

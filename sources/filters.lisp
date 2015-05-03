@@ -16,7 +16,7 @@
 ; **** Simple Moving Average (sma) ****
          
 (defmethod! sma ((self list) (windowsize number) &key (recursion 1) mode)
-            :icon '(631)  
+            :icon 15 ;'(631)  
             :initvals '(nil 5 1 lowpass)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -54,9 +54,9 @@
               ))
 
 (defmethod! sma ((self 3dc) (windowsize number) &key (recursion 1) mode)
-            (let ((xpoints (sma (x-points self) :recursion recursion :mode mode))
-                  (ypoints (sma (y-points self) :recursion recursion :mode mode))
-                  (zpoints (sma (z-points self) :recursion recursion :mode mode)))
+            (let ((xpoints (sma (x-points self) windowsize :recursion recursion :mode mode))
+                  (ypoints (sma (y-points self) windowsize :recursion recursion :mode mode))
+                  (zpoints (sma (z-points self) windowsize :recursion recursion :mode mode)))
               (3dc-from-list xpoints ypoints zpoints '3dc (decimals self))
               ))
 
@@ -74,7 +74,7 @@
 ; Uses linear weighting
 
 (defmethod! wma ((self list) (windowsize number) &optional (recursion 1))
-            :icon '(631)   
+            :icon 15; '(631)   
             :initvals '(nil 5 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -122,7 +122,7 @@
 ; Note,  this is an IIR filter (thus, now windowsize)
 
 (defmethod! ema ((self list) (alpha number) &key (recursion 1) mode)
-            :icon '(631)  
+            :icon 15 ;'(631)  
             :initvals '(nil 10 1 lowpass)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -180,7 +180,7 @@
 ; **** Simple Moving Median (smm) ****
 
 (defmethod! smm ((self list) (windowsize number) &optional (recursion 1))
-            :icon '(631)  
+            :icon 15; '(631)  
             :initvals '(nil 5 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
@@ -223,7 +223,7 @@
 ; **** B-Splines (Polynomial Interpolation) ****
 
 (defmethod! b-spline ((self bpf) &key (order 3) resample mode)
-            :icon '(631)  
+            :icon 15; '(631)  
             :initvals '(nil 3 100 lowpass)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of polynomial function (integer)" "defines resampling of curve (integer=points, decimal=factor")
             :numouts 1

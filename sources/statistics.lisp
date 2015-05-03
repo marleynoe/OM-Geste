@@ -339,6 +339,10 @@
             (arith-mean (y-points self))
             )
 
+;compat
+(defmethod! mean (self)
+            (arith-mean self)
+            )
 
 ; variance / sample variance
 (defmethod! variance ((self list) &optional (bessel nil))
