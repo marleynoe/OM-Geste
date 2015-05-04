@@ -140,10 +140,16 @@
               )
 
 (defmethod! om* ((arg1 bpf) (arg2 bpf))
-            (let ((ypoints1 (y-points arg1))
+          
+            (let (
+                  (ypoints1 (y-points arg1))
                   (ypoints2 (y-points arg2))
                   (xpoints1 (x-points arg1))
                   (xpoints2 (x-points arg2)))
+                (when (< (length xpoints1) (length xpoints2)) (setf xpoints1 (second (multiple-value-list (om-sample arg1 (length xpoints2))))
+                                                                    ypoints1 (third (multiple-value-list (om-sample arg1 (length xpoints2))))))
+                (when (< (length xpoints2) (length xpoints1)) (setf xpoints2 (second (multiple-value-list (om-sample arg2 (length xpoints1))))
+                                                                    ypoints2 (third (multiple-value-list (om-sample arg2 (length xpoints1))))))
               ; (if (length for now assume the length of xpoints is the same for both bpfs
               (simple-bpf-from-list xpoints1 (om* ypoints1 ypoints2) 'bpf (decimals arg1))
               ))
