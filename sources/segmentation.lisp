@@ -199,11 +199,6 @@
             )
              
 
-(equal (type-of 0.5) 'single-float)                                          
-        (type-of 0.5)                                               
-; I had an idea to have a more specialized class than simply a time-array...  it needs to be a time-array which segments audio! and score objects.
-; datalists is a row of the matrix (instance) of lists (parameters)
-
 ; here we choose to create objects solely based on the dimensionality of the data. This assumption is probably not always a good choice. 
 ; Instead, could be based on the matrix type inside the SDIF (implicit)? Or in an NVT an entry for "separable" or "integral"?
 ; Or a combination: First check for SDIF type, THEN check for dimensionality. Meaning: in the SDIF multiple fields (columns) are integral, rows are separable

@@ -37,23 +37,32 @@
                   (let* ((obj-instance (make-instance (type-of object)))
                          ;(print (slot-definition-name (class-slots (class-of box))))
                          (thecontrols (lcontrols self))
-                         (vals                     
-                          (multiple-value-list 
-                           (funcall (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
-                                    
-                                    ;(loop for slot in thecontrols collect
-                                    ;      (list (string (first slot)) (nth col (list! (second slot)))))))) ;the function uses this
-                         
-                                    (loop for slot in thecontrols collect
+                         (input-names (mapcar #'(lambda (out) 
+                                                  (intern (frame-name out) :om))
+                                              (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice)))
+                         (controls (loop for slot in thecontrols collect
                                           (if (and (not (listp (second slot))) (eql (type-of (second slot)) 'bpf))
                                               (let ((sampledval (nth col (third (multiple-value-list (om-sample (second slot) (numcols self)))))))
                                                 (list (string (first slot)) sampledval))
                                             (list (string (first slot)) (nth col (second slot))))
-                                          ))))
+                                          ))
 
-                         ;(input-names (print (mapcar #'(lambda (out) 
-                         ;                   (intern (frame-name out) :om))
-                         ;               (sort (find-class-boxes (boxes mapping-fun) 'omin) '< :key 'indice))))     
+                         (controls2 (loop for inp in input-names collect
+                                          (let ((found (find inp controls :key 'car :test 'string-equal)))
+                                            (if found (cadr found)
+                                              (progn
+                                                (om-beep-msg (format nil "Input param ~s doesn't exist!" (string-upcase inp)))
+                                                (om-abort))))))
+                                          ;(cadr (find inp controls :key 'car :test 'string-equal))))
+                         (vals                     
+                          (multiple-value-list 
+                           (apply (intern (string (code mapping-fun)) :om) ;mapping fun = patch in lambda mode
+                                  controls2
+                                    ;(loop for slot in thecontrols collect
+                                    ;      (list (string (first slot)) (nth col (list! (second slot)))))))) ;the function uses this
+                                  
+                                  )))
+                        
                          
                          (names (mapcar #'(lambda (out) 
                                             (intern (string-upcase (frame-name out)) :om))
@@ -77,12 +86,15 @@
                       (set-class-slots obj-instance (car slots) (cadr slots))
                       )))))
 
+
 #| better:
 (apply #'make-instance 'myclass
        (loop for (parameter value) in '((initarg1 1) (initarg2 2) (initarg3 '(a b)))
              collect (intern (symbol-name parameter) (find-package :keyword))
              collect value))
 |#
+
+
 
 ; **** HELPER FUNCTIONS ****
 

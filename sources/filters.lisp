@@ -4,8 +4,6 @@
 
 ; This file  contains filtering functions for low-/high-pass filtering for conditioning and other purposes
 
-
-
 ; %%%%%%%%%%%%%%%%%%%%%%
 ; MOVING AVERAGE FILTERS
 
@@ -185,14 +183,16 @@
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
             :doc "Implements a simple-moving-median: the median of a list of numbers in a sliding window."
-            (let ((thelist self)) 
-              (loop for i from 1 to recursion do
-                    (let ((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist)))
-                      (setf thelist (loop for window in self collect
-                                          (nth (ceiling (* 0.5 windowsize))
-                                               (sort-list (first-n (setf windowedlist (cdr windowedlist)) windowsize))
-                                               )))
-                      ))
+            (let ((thelist self))
+              (if (numberp (car thelist))
+                  (loop for i from 1 to recursion do
+                        (let ((windowedlist (x-append (repeat-n (car thelist) windowsize) thelist)))
+                          (setf thelist (loop for window in self collect
+                                              (nth (ceiling (* 0.5 windowsize))
+                                                   (sort-list (first-n (setf windowedlist (cdr windowedlist)) windowsize))
+                                                   )))
+                          ))
+                (setf thelist (mapcar (lambda (x) (smm x windowsize recursion)) thelist)))
               thelist))
 
 (defmethod! smm ((self bpf) (windowsize number) &optional (recursion 1))

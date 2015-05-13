@@ -112,13 +112,9 @@
                 (setf thelist (mapcar (lambda (x) (integrate x order startval)) thelist)))
               thelist))
 
-(defmethod! integrate ((self bpf) (order integer) &optional startval)
-            (let ((thelist (cdr (y-points self)))) ; ???
-              (loop for i from 1 to order do                 
-                      (setf thelist (dx->x 0 thelist))
-                      )
-              (simple-bpf-from-list (x-points self) thelist 'bpf (decimals self))
-              ))
+(defmethod! integrate ((self bpf) (order integer) &optional startval)          
+            (simple-bpf-from-list (x-points self) (integrate (cdr (y-points self)) order startval) 'bpf (decimals self))       
+            )
 
 (defmethod! integrate ((self bpc) (order integer) &optional startval)
             (let ((xlist (cdr (x-points self)))

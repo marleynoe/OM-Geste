@@ -66,6 +66,7 @@
 
 (defmethod! add-row ((self class-array) (slotname string) (slotvals t) &key index sonagram) 
             :icon 266
+            :initvals '(nil nil nil nil t)
             (let* ((arraydata (data self))
                    (timesdata (times self))
                    (labeldata
@@ -92,6 +93,7 @@
                  
                    ; b)
                    (slotvals (if (soundp slotvals)
+                                 ; this requires om-sox
                                  (if sonagram
                                      (mapcar (lambda (x) (sox-spectrogram x nil 1)) 
                                         (sox-process slotvals (mapcar (lambda (x) (sox-trim x)) 
@@ -106,7 +108,7 @@
                    ; c) for chord-seq objects
                    (slotvals (if (eql (type-of slotvals) 'chord-seq)
                                  (loop for i from 1 to (1- (length timesdata)) collect
-                                       (select slotvals (* 1000 (nth (1- i) timesdata)) (* 1000 (nth i timesdata))))
+                                       (select slotvals (round (* 1000 (nth (1- i) timesdata))) (round (* 1000 (nth i timesdata)))))
                                slotvals))    
 
                    ; d) for voice object -doesn't work yet for some reason
@@ -126,13 +128,13 @@
               ;(print finaldata)
               (set-array (type-of self) (times self) finaldata)
               ))
-
+    
 
 (defmethod! add-row ((self class-array) (slotname list) (slotvals list) &key index sonagram)
             (let ((themodel self))
               (if (car (list! index))
-                  (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val :index i))) slotname slotvals index)
-                (mapc (lambda (slot val) (setf themodel (add-row themodel slot val))) slotname slotvals))
+                  (mapc (lambda (slot val i) (setf themodel (add-row themodel slot val :index i :sonagram sonagram))) slotname slotvals index)
+                (mapc (lambda (slot val) (setf themodel (add-row themodel slot val :index index :sonagram sonagram))) slotname slotvals))
               themodel)
             )
 
