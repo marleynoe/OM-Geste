@@ -41,28 +41,32 @@
 
 
 ;Yes, this is absolutely required!
-#|
-(defmethod* objFromObjs ((self gesture-array) (type gesture-model))       
-            ;(when (print (times type))
-            ;(print "here")
-             ; (let ((thetimearray (print (segment-gstr self (print (times type)))))
-              ;      (thegesture-model (make-instance 'gesture-model)))
-                ;(make-instance 'gesture-model :self thetimearray))
-               ; (objFromObjs thetimearray thegesture-model))
-            (print (segment-gstr self '(20 21 22 23)))
-              )
-|#
 
-#|
-(defmethod* objFromObjs ((self gesture-model) (type gesture-array))       
-            ;(when (print (times type))
-            (print "here")
-              ;(let ((thetimearray (print (segment-gstr self (print (times type)))))
-                  ;  (thegesture-model (make-instance 'gesture-model)))
+(defmethod* objFromObjs ((self gesture-array) (type gesture-model))                 
+            ;(print (times type))         
+            ;(print "here")
+            (let ((thetimearray (print (segment-gesture self (timerange self)))))
+                  ;(thegesture-model (make-instance 'gesture-model)))
                 ;(make-instance 'gesture-model :self thetimearray))
                ; (objFromObjs thetimearray thegesture-model))
-              )
-|#
+            ;(print (segment-gstr self '(20 21 22 23)))
+               thetimearray))
+              ;(make-instance 'gesture-model :self thetimearray)))
+; thetimearray))
+
+
+;I think you can copy the process of :
+(defmethod cons-new-object ((self GESTURE-MODEL) args objs)
+  (let ((rep (call-next-method)))
+     ;;; IF YOU HAVE AN "OBJFROMOBJS" DEFINED IT WILL BE DONE HERE
+     ;;; => SET THE TIMES 
+    ;(setf thetimes (print (times self)))
+    ;(setf (times self) (nth 1 args))
+    ;(print (nth 1 args))
+    (when rep
+	;;; DO SOMETHING WITH (nth 1 args)
+        ;(segment-gesture self (print (nth 1 args)))
+    rep)))
 
 
 #|
