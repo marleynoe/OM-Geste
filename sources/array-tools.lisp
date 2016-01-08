@@ -75,6 +75,8 @@
                           collect
                           (list (index2label self i) slot)
                           ))
+
+                   ; CONSIDER: SHOULD A BPF BE EXTRACTED/RESAMPLED TO CORRESPOND TO THE TIMES OF THE ORIGINAL GESTURE-MODEL??
                    ; 
                    ; HERE ARE NUMBER OF CASES FOR DIFFERENT DATA (would be better implemented directly in the gesture-model
                    ; !!!!!!!!!!!!!!!!!!!!

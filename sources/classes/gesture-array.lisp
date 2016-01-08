@@ -138,3 +138,52 @@ Returns a list of lists in which the first is the stream numbers in the file, th
    (list (sort-list streamlist) global-tmin global-tmax)
    )
    ))
+
+; Functions for accessing data in a gesture array
+
+; get-stream is used in mappings (i.e. for gesture-models), too
+(defmethod! get-stream ((matrix-data gesture-array) (stream symbol))
+            :icon 013
+            :initvals '(nil nil)
+            :indoc '("gesture-data" "stream name")
+            (let* ((thestream (find stream (streams matrix-data) :test 'string-equal :key #'(lambda (x) (second (sdif-info x))))))
+              thestream
+              )
+            )
+
+(defmethod! get-substreams ((matrix-data gesture-array) (stream symbol))
+            :icon 013
+            :initvals '(nil nil)
+            :indoc '("gesture-data" "stream name")
+            :numouts 2         
+            (let* ((thestream (find stream (streams matrix-data) :test 'string-equal :key #'(lambda (x) (second (sdif-info x)))))
+                   (timepoints (timelist thestream))
+                   )
+              (values timepoints (substreams thestream))
+              )
+            )
+
+(defmethod! get-valuelists ((matrix-data gesture-array) (stream symbol))
+            :icon 013
+            :initvals '(nil nil)
+            :indoc '("gesture-data" "stream name")
+            :numouts 2
+            ;(cadr (find stream matrix-data :test 'string-equal :key 'car))
+            (let* ((thestream (find stream (streams matrix-data) :test 'string-equal :key #'(lambda (x) (second (sdif-info x)))))
+                   (timepoints (timelist thestream))
+                   )
+              (values timepoints (valuelists (car (substreams thestream))))
+              )
+            )
+
+(defmethod! get-values-bpf ((matrix-data gesture-array) (stream symbol) (dimension number))
+            :icon 013
+            :initvals '(nil nil 0)
+            :indoc '("gesture-data" "stream name" "dimension")
+            (let* ((thestream (find stream (streams matrix-data) :test 'string-equal :key #'(lambda (x) (second (sdif-info x)))))
+                   (timepoints (timelist thestream))
+                   (ypoints (nth dimension (valuelists (car (substreams thestream)))))
+                   )
+              (simple-bpf-from-list timepoints ypoints 'bpf 10)
+              )
+            )

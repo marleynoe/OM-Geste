@@ -524,7 +524,7 @@
                        (signs (x-transfer (mat-trans secondderivative) zerox))
                        (peakpos nil)
                        (troughpos nil))
-              ;find maxima and minima and write into peakpos and throughpos
+              ;find maxima and minima and write into peakpos and troughpos
                   (loop for item in signs for x from 0 to (length signs) do ; also, this structure? for j = 0 then (+ j 1)
                         (unless (= item 0)
                           (if (< item 0) 
@@ -545,7 +545,7 @@
                                (summed-distances (loop for 1st in euc-distance
                                                        for 2nd in (cdr (x-append euc-distance (car (last euc-distance)))) collect
                                                        (+ 1st 2nd)))
-                               (dummy (print (list (length peaksandtroughs) (length summed-distances) (length zerox))))
+                               (dummy (list (length peaksandtroughs) (length summed-distances) (length zerox)))
                                (points-and-distance (loop for pat in peaksandtroughs 
                                                           for sdt in summed-distances collect
                                                           (x-append sdt pat)
