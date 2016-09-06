@@ -117,7 +117,7 @@
 
 ; ******************************************
 ; **** Exponential Moving Average (ema) ****
-; Note,  this is an IIR filter (thus, now windowsize)
+; Note,  this is an IIR filter (thus, no windowsize)
 
 (defmethod! ema ((self list) (alpha number) &key (recursion 1) mode)
             :icon 15 ;'(631)  
@@ -125,7 +125,7 @@
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "a number" "a number")
             :numouts 1
             :menuins '((3 (( "lowpass" lowpass) ("highpass" highpass)))) 
-            :doc "Implements the simple-moving-average: the arithmetic mean of a list of numbers in a sliding window"
+            :doc "Implements the exponential-moving-average. This is an IIR filter (thus, no windowsize)"
             (let ((lastsample (car self))
                   (thelist self)
                   (recialpha (/ 1 alpha)))
@@ -274,11 +274,17 @@ if <resample> is a decimal it is a factor of the points in the original curve."
                    timedtraject))
 
 
-; exponential moving deviation   
+; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+; DATA REDUCTION
+ 
 (defmethod! emd ((self list) (alpha number))
             (ema (om-abs (om- self (ema self alpha))) alpha)
             )
 
+(defmethod! reduce-bpf ((self list) n &optional (precision 10))
+              :icon 910
+              (mapcar #'(lambda (item) (reduce-n-points item n precision)) self)
+              )
 
 
 #|
@@ -289,7 +295,7 @@ if <resample> is a decimal it is a factor of the points in the original curve."
   :indoc '("list of data"  "window size in samples data" )
   :icon '(213) 
   :numouts 1
-  :doc   " traditional Low pass filter, where <list> is the data flow to filter and <window> 
+  :doc   " traditional Low pass filter, where <data> is the data flow to filter and <window> 
 is the parameter to calculate the window delay. The <window delay> will be (2*window + 1)"
   
   (om::x-append (om::first-n data (1- window))

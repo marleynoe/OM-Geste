@@ -1,6 +1,6 @@
 ;*********************************************************************
 ;                             OM-Geste                               *
-;     (c) 2011-2015 Marlon Schumacher (CIRMMT/McGill University)     *
+;     (c) 2011-2016 Marlon Schumacher (CIRMMT/McGill University)     *
 ;               https://github.com/marleynoe/OM-Geste                *
 ;                                                                    *
 ;      Representation and Processing of Gesture Data in OpenMusic    *
@@ -33,7 +33,7 @@
             :initvals '(nil 1)
             :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof" "order of derivative")
             :numouts 1
-            :doc "Calculates the nth-order finite difference."           
+            :doc "Calculates the nth-order first finite difference."           
             (let ((thelist self))
               (if (numberp (car self))
                   (loop for i from 1 to order do
@@ -151,6 +151,19 @@
               ))
 
 ; ----------------------------- 
+
+; function to determine the extremas in a curve (= wendepunkte)
+
+(defmethod! extrema ((self bpf))
+            :icon '(631) 
+            :initvals '(nil)
+            :indoc '("a list, bpf, bpc, 3dc, 3d-trajectory or libs thereof")
+            :numouts 1
+            :doc "Finds extrema in <self>"  
+            (let ((thexvals (y-transfer (differentiate self 1) 0)))
+              (simple-bpf-from-list thexvals (x-transfer self thexvals) 'bpf (decimals self))
+              )
+            )
 
 ; root-mean-square
 (defun rootmeansquare (self)

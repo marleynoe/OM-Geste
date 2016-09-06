@@ -24,6 +24,9 @@
 ;
 ;Authors: M. Schumacher
 
+
+; NACHRICHT AN MARC: HIER GIBT's KEINE DOC: ZEILE, ALLERDINGS SOLLTEN ALLE FUNKTIONEN UNTERHALB VON %%%% NEW %%%% TROTZDEM IN DIE EXCEL TABELLE
+
 (in-package :om)
 
 ;%%%%%%%%%% PROCESS ARRAY %%%%%%%%%%%%%%
